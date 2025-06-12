@@ -1,0 +1,49 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+*.pyo
+
+# Virtual environments
+env/
+venv/
+.venv/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints
+
+# PyTorch and model artifacts
+*.pth
+*.pt
+
+# FAISS index files
+*.faiss
+
+# Streamlit cache
+.streamlit/
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.bak
+
+# Logs and temporary data
+*.log
+*.tmp
+*.tensorboard
+
+# Python egg metadata
+*.egg-info/
+dist/
+build/
+
+# Ignore VSCode settings (optional)
+.vscode/
+
+# Environment and package managers
+*.conda
+*.env
+*.yaml.lock

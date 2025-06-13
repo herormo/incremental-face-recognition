@@ -3,12 +3,10 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from torchvision.models import resnet18, ResNet18_Weights
 
-import numpy as np
 from PIL import Image
 import faiss
 from pathlib import Path
 import pickle
-import faiss
 
 DB_PATH = Path("data/database.pkl")
 INDEX_PATH = Path("data/index.faiss")

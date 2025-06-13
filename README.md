@@ -33,3 +33,4 @@ incremental-face-recognition/
 - [ ] Evaluate and test accuracy (graphs) mechanism
 - [ ] Use various models to benchmark
 - [ ] Deploy online
+- [ ] Improve/fix readme file

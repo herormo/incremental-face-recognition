@@ -24,3 +24,12 @@ incremental-face-recognition/
 - conda env create -f environment.yml
 - conda activate face-recognition
 - streamlit run app.py
+
+## Todo
+
+- [ ] Check uniqueness of enrolled face names to avoid duplicates
+- [ ] In recognize mode, if a face is not recognized, automaticaly lead the user to change to enroll mode
+- [ ] In enroll mode, check the database, if the face is recognized, suggest user to skip enrolling
+- [ ] Evaluate and test accuracy (graphs) mechanism
+- [ ] Use various models to benchmark
+- [ ] Deploy online

@@ -1,15 +1,15 @@
 name: face-recognition
 channels:
-  - defaults
-  - conda-forge
   - pytorch
+  - conda-forge
+  - defaults
 dependencies:
   - python=3.10
   - pip
-  - pytorch
-  - torchvision
+  - numpy
   - faiss-cpu
   - pip:
-      - streamlit
+      - torch==2.2.2+cu118
+      - torchvision==0.17.2+cu118
       - pillow
-      - numpy
+      - streamlit

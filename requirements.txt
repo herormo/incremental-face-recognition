@@ -1,6 +1,6 @@
-streamlit
-torch
-torchvision
-faiss-cpu
-pillow
+torch==2.2.2+cu118
+torchvision==0.17.2+cu118
 numpy
+pillow
+streamlit
+faiss-cpu

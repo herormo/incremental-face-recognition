@@ -3,6 +3,7 @@
 A lightweight, modular face recognition system with incremental learning capabilities. Users can enroll new subjects and recognize faces using a simple web UI.
 
 ## Features
+
 - Face embedding using ResNet18
 - Fast similarity search using FAISS
 - Streamlit-based user interface
@@ -10,14 +11,17 @@ A lightweight, modular face recognition system with incremental learning capabil
 - Enroll and recognize faces without retraining
 
 ## Folder Structure
+
+```text
 incremental-face-recognition/
-├── app.py # Streamlit UI
+├── app.py              # Streamlit UI
 ├── src/
-│ └── face_ops.py # Embedding & FAISS logic
-├── models/ # (optional) save/load model
-├── data/ # (optional) save/load index
+│   └── face_ops.py     # Embedding & FAISS logic
+├── models/             # 
+├── data/               # save/load index
 ├── requirements.txt
 └── README.md
+```
 
 ## Usage
 

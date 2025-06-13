@@ -25,10 +25,11 @@ incremental-face-recognition/
 
 ## Usage
 
+```text
 - conda env create -f environment.yml
 - conda activate face-recognition
 - streamlit run app.py
-
+```text
 ## Todo
 
 - [ ] Check uniqueness of enrolled face names to avoid duplicates

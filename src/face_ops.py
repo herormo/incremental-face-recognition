@@ -7,13 +7,15 @@ from PIL import Image
 import faiss
 from pathlib import Path
 import pickle
+import numpy as np
+from sklearn.preprocessing import normalize
 
 DB_PATH = Path("data/database.pkl")
 INDEX_PATH = Path("data/index.faiss")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Preprocessing pipeline
+# Image preprocessing
 transform = transforms.Compose([
     transforms.Resize((160, 160)),
     transforms.ToTensor(),
@@ -26,21 +28,18 @@ def preprocess_image(image: Image.Image):
 def build_model():
     weights = ResNet18_Weights.DEFAULT
     model = resnet18(weights=weights)
-    model.fc = nn.Linear(model.fc.in_features, 128)
-    return model.to(device)
+    model.fc = nn.Identity()  # use 512-d raw features
+    model.to(device)
+    model.eval()
+    return model
 
 def load_model():
-    model = resnet18(weights=ResNet18_Weights.DEFAULT)
-    model.fc = torch.nn.Identity()
-    model.eval()
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
+    model = build_model()
 
     if INDEX_PATH.exists():
         index = faiss.read_index(str(INDEX_PATH))
     else:
-        index = faiss.IndexFlatL2(512)
+        index = faiss.IndexFlatL2(512)  # must match embedding size
 
     if DB_PATH.exists():
         with open(DB_PATH, "rb") as f:
@@ -50,33 +49,34 @@ def load_model():
 
     return model, index, database
 
-
 def extract_embedding(model, image):
-    model.to(device)  # move model to device
-
-    x = preprocess_image(image)  # your preprocessing returns a tensor
-    x = x.to(device)       # move input tensor to the same device
-
+    x = preprocess_image(image)
     with torch.no_grad():
-        emb = model(x).cpu().numpy()  # output moved back to CPU numpy array
-
+        emb = model(x).cpu().numpy()
+    emb = normalize(emb, axis=1).astype("float32")
     return emb
 
 def add_to_database(name, embedding, index, database):
-    embedding_np = embedding.astype("float32")
-    index.add(embedding_np)
-    database.append((name, embedding_np))
+    # Normalize again just to be safe
+    embedding = normalize(embedding, axis=1).astype("float32")
 
-    # Save
+    index.add(embedding)
+    database.append((name, embedding))
+
     with open(DB_PATH, "wb") as f:
         pickle.dump(database, f)
+
     faiss.write_index(index, str(INDEX_PATH))
 
+def recognize(embedding, index, database, threshold=1.85):
+    embedding = normalize(embedding, axis=1).astype("float32")
 
-def recognize(embedding, index, database, threshold=1.1):
     if index.ntotal == 0:
         return "No enrolled faces", None
+
     D, I = index.search(embedding, 1)
+
     if D[0][0] > threshold:
         return "Unknown", D[0][0]
+
     return database[I[0][0]][0], D[0][0]

@@ -13,3 +13,4 @@ dependencies:
       - torchvision==0.17.2+cu118
       - pillow
       - streamlit
+      - scikit-learn

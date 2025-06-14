@@ -4,3 +4,4 @@ numpy
 pillow
 streamlit
 faiss-cpu
+scikit-learn

@@ -56,17 +56,28 @@ def extract_embedding(model, image):
     emb = normalize(emb, axis=1).astype("float32")
     return emb
 
-def add_to_database(name, embedding, index, database):
-    # Normalize again just to be safe
+def add_to_database(name, embedding, index, database, duplicate_threshold=0.8):
+    # Normalize input embedding
     embedding = normalize(embedding, axis=1).astype("float32")
 
+    # Check for duplicates
+    if index.ntotal > 0:
+        D, I = index.search(embedding, 1)
+        if D[0][0] < duplicate_threshold:
+            print(f"Duplicate detected. Closest match: {database[I[0][0]][0]} with distance {D[0][0]:.4f}")
+            return False  # Skip adding
+
+    # Add to index and database
     index.add(embedding)
     database.append((name, embedding))
 
+    # Save
     with open(DB_PATH, "wb") as f:
         pickle.dump(database, f)
-
     faiss.write_index(index, str(INDEX_PATH))
+
+    return True
+
 
 def recognize(embedding, index, database, threshold=1.85):
     embedding = normalize(embedding, axis=1).astype("float32")

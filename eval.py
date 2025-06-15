@@ -2,7 +2,9 @@ import os
 import json
 import torch
 import matplotlib
-
+import getpass
+from datetime import datetime
+import matplotlib.pyplot as plt
 matplotlib.use("Agg")  # Fix PyCharm backend issue
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,6 +25,14 @@ DATASET_PATH = Path(kagglehub.dataset_download("vasukipatel/face-recognition-dat
 TEST_DIR = str(DATASET_PATH / "Original Images" / "Original Images")
 print("Evaluating dataset at:", TEST_DIR)
 
+# Create results folder if it doesn't exist
+results_dir = Path("results")
+results_dir.mkdir(exist_ok=True)
+
+# Create timestamped subdirectory
+results_subdir = results_dir / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+results_subdir.mkdir(exist_ok=True)
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 if device.type == "cuda":
@@ -39,24 +49,25 @@ all_people_dirs = [
     if os.path.isdir(os.path.join(TEST_DIR, person))
 ]
 
-# Flatten all image paths with labels, then select up to 100
+# Flatten all image paths with labels
 all_images = []
 for person_dir, person in all_people_dirs:
     for img_file in os.listdir(person_dir):
-        if img_file.lower().endswith(("jpg", "jpeg", "png")):
+        if img_file.lower().endswith(('jpg', 'jpeg', 'png')):
             all_images.append((os.path.join(person_dir, img_file), person))
 all_images = all_images[:100]
 
 # Rebuild all_people_dirs to only include people in the selected 100 images
 selected_people = set([person for _, person in all_images])
 all_people_dirs = [
-    (os.path.join(TEST_DIR, person), person) for person in selected_people
+    (os.path.join(TEST_DIR, person), person)
+    for person in selected_people
 ]
 
 test_set = []
 for person_dir, person in all_people_dirs:
     for img_file in os.listdir(person_dir):
-        if img_file.lower().endswith(("jpg", "jpeg", "png")):
+        if img_file.lower().endswith(('jpg', 'jpeg', 'png')):
             img_path = os.path.join(person_dir, img_file)
             test_set.append((img_path, person))
 
@@ -67,7 +78,7 @@ enrollment_images = {}
 
 for person_dir, person in all_people_dirs:
     for img_file in os.listdir(person_dir):
-        if img_file.lower().endswith(("jpg", "jpeg", "png")):
+        if img_file.lower().endswith(('jpg', 'jpeg', 'png')):
             if person not in enrollment_images:
                 enrollment_images[person] = []
             if len(enrollment_images[person]) < 2:  # Limit to 3 images
@@ -110,34 +121,33 @@ for model_name, config in MODEL_CONFIG.items():
 
         if predicted_name == true_label:
             correct += 1
-            similarities.append(float(dist))
         else:
-            wrong_predictions.append(
-                (img_path, true_label, predicted_name, float(dist))
-            )
-
+            wrong_predictions.append((img_path, true_label, predicted_name, float(dist)))
+        similarities.append(float(dist))
+    
     accuracy = correct / total
-    avg_dist = np.mean(similarities) if similarities else float("nan")
+    avg_dist = np.mean(similarities) if similarities else float('nan')
 
     print(f"Accuracy: {accuracy:.2%}")
     print(f"Average Similarity (correct matches): {avg_dist:.4f}")
 
-    # Visualize
+    # Visualization
     plt.figure()
-    plt.hist(similarities, bins=20, color="skyblue", edgecolor="black")
+    plt.hist(similarities, bins=20, color='skyblue', edgecolor='black')
     plt.title(f"{model_name} Similarity Distribution")
     plt.xlabel("Cosine Similarity")
     plt.ylabel("Frequency")
     plt.grid(True)
-    plt.savefig(f"{model_name}_similarity_distribution.png")
+
+    # Save plot
+    plot_path = os.path.join(results_subdir, f"{model_name}_similarity_distribution.png")
+    plt.savefig(plot_path)
 
     # Output error cases
     if wrong_predictions:
         print("\nSample Wrong Predictions:")
         for path, true_label, pred, d in wrong_predictions[:5]:
-            print(
-                f"- {os.path.basename(path)} | True: {true_label}, Predicted: {pred}, Similarity: {d:.4f}"
-            )
+            print(f"- {os.path.basename(path)} | True: {true_label}, Predicted: {pred}, Similarity: {d:.4f}")
 
     # Store results
     results_summary[model_name] = {
@@ -150,14 +160,17 @@ for model_name, config in MODEL_CONFIG.items():
                 "image": os.path.basename(p),
                 "true": t,
                 "pred": pr,
-                "similarity": float(d),
-            }
-            for p, t, pr, d in wrong_predictions[:20]
-        ],
+                "similarity": float(d)
+            } for p, t, pr, d in wrong_predictions[:20]
+        ]
     }
 
-# Save all results
-with open("benchmark_results.json", "w") as f:
+# Save all results with username and timestamp
+user = getpass.getuser()
+timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+results_file = os.path.join(results_subdir, f"benchmark_results_{user}_{timestamp}.json")
+
+with open(results_file, "w") as f:
     json.dump(results_summary, f, indent=2)
 
-print("\nBenchmarking complete. Results saved to benchmark_results.json")
+print(f"\nBenchmarking complete. Results saved to {results_file}")

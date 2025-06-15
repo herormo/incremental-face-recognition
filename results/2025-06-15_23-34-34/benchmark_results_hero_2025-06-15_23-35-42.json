@@ -1,7 +1,7 @@
 {
   "facenet": {
     "accuracy": 0.17,
-    "average_similarity": 0.8338244662565344,
+    "average_similarity": 0.6038290962576867,
     "total": 100,
     "correct": 17,
     "wrong_cases": [
@@ -129,7 +129,7 @@
   },
   "arcface": {
     "accuracy": 0.32,
-    "average_similarity": 0.8051390666514635,
+    "average_similarity": 0.7111367851495742,
     "total": 100,
     "correct": 32,
     "wrong_cases": [
@@ -256,58 +256,64 @@
     ]
   },
   "vggface": {
-    "accuracy": 0.92,
-    "average_similarity": 0.8585179409255153,
+    "accuracy": 0.91,
+    "average_similarity": 0.8456836342811584,
     "total": 100,
-    "correct": 92,
+    "correct": 91,
     "wrong_cases": [
-      {
-        "image": "Lisa Kudrow_41.jpg",
-        "true": "Lisa Kudrow",
-        "pred": "Kashyap",
-        "similarity": 0.8215972185134888
-      },
       {
         "image": "Lisa Kudrow_1.jpg",
         "true": "Lisa Kudrow",
         "pred": "Kashyap",
-        "similarity": 0.7726778984069824
+        "similarity": 0.7872731685638428
+      },
+      {
+        "image": "Lisa Kudrow_31.jpg",
+        "true": "Lisa Kudrow",
+        "pred": "Unknown",
+        "similarity": 0.7368099093437195
       },
       {
         "image": "Lisa Kudrow_24.jpg",
         "true": "Lisa Kudrow",
         "pred": "Unknown",
-        "similarity": 0.7235709428787231
+        "similarity": 0.728249192237854
       },
       {
-        "image": "Lisa Kudrow_27.jpg",
-        "true": "Lisa Kudrow",
-        "pred": "Kashyap",
-        "similarity": 0.7971636056900024
+        "image": "Kashyap_5.jpg",
+        "true": "Kashyap",
+        "pred": "Unknown",
+        "similarity": 0.7484976649284363
       },
       {
         "image": "Kashyap_21.jpg",
         "true": "Kashyap",
         "pred": "Lisa Kudrow",
-        "similarity": 0.803159773349762
+        "similarity": 0.7864328622817993
       },
       {
         "image": "Kashyap_22.jpg",
         "true": "Kashyap",
         "pred": "Lisa Kudrow",
-        "similarity": 0.8461105227470398
+        "similarity": 0.8177438974380493
+      },
+      {
+        "image": "Kashyap_4.jpg",
+        "true": "Kashyap",
+        "pred": "Lisa Kudrow",
+        "similarity": 0.8046537637710571
+      },
+      {
+        "image": "Kashyap_18.jpg",
+        "true": "Kashyap",
+        "pred": "Lisa Kudrow",
+        "similarity": 0.8314911723136902
       },
       {
         "image": "Kashyap_9.jpg",
         "true": "Kashyap",
         "pred": "Lisa Kudrow",
-        "similarity": 0.754365086555481
-      },
-      {
-        "image": "Kashyap_25.jpg",
-        "true": "Kashyap",
-        "pred": "Unknown",
-        "similarity": 0.7464672327041626
+        "similarity": 0.8394377827644348
       }
     ]
   }

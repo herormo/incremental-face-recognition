@@ -1,0 +1,22 @@
+{
+  "resnet18": {
+    "builder": "build_model_resnet18",
+    "dim": 512,
+    "metric": "L2"
+  },
+  "facenet": {
+    "builder": "build_model_facenet",
+    "dim": 512,
+    "metric": "cosine"
+  },
+  "arcface": {
+    "builder": "build_model_arcface",
+    "dim": 512,
+    "metric": "cosine"
+  },
+  "vggface": {
+    "builder": "build_model_vggface",
+    "dim": 512,
+    "metric": "cosine"
+  }
+}

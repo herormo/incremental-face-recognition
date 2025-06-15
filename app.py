@@ -11,29 +11,35 @@ st.title("Incremental Face Recognition System (PyTorch)")
 
 mode = st.radio("Choose mode", ["Enroll New Face", "Recognize Face"])
 
-uploaded_image = st.file_uploader("Upload an image", type=['jpg', 'png', 'jpeg'])
+uploaded_image = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"])
 
 if uploaded_image:
     image = Image.open(uploaded_image).convert("RGB")
     st.image(image, caption="Uploaded Image", use_container_width=True)
-    embedding = extract_embedding(model, image)
+    embedding = extract_embedding(model, image, model_name="vggface")
 
     if mode == "Enroll New Face":
         name = st.text_input("Enter name")
         if st.button("Enroll") and name:
-            add_to_database(name, embedding, index, database)
-            st.success(f"{name} has been enrolled successfully!")
+            success = add_to_database(name, embedding, index, database)
+            if success:
+                st.success(f"{name} has been enrolled successfully!")
+            else:
+                st.warning("Face already enrolled")
 
     elif mode == "Recognize Face":
         if st.button("Identify"):
+            st.write("Button clicked. Recognizing...")
             identity, dist = recognize(embedding, index, database)
-            st.info(f"Identified as: {identity}")
-            if dist is not None:
-                st.write(f"Distance: {dist:.4f}")
+            st.write(
+                f"Immediate check → Identified as: {identity} at similarity: {dist:.4f}"
+            )
+            # st.info(f"Identified as: {identity}")
+            # if dist is not None:
+            #     st.write(f"Distance: {dist:.4f}")
 
 if st.checkbox("Show enrolled database"):
     if not database:
         st.write("No faces enrolled.")
     else:
         st.write([name for name, _ in database])
-

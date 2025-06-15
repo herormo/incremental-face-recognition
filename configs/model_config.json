@@ -1,0 +1,17 @@
+{
+  "facenet": {
+    "builder": "build_model",
+    "dim": 512,
+    "metric": "cosine"
+  },
+  "arcface": {
+    "builder": "build_model_arcface",
+    "dim": 512,
+    "metric": "cosine"
+  },
+  "vggface": {
+    "builder": "build_model_vggface",
+    "dim": 512,
+    "metric": "cosine"
+  }
+}

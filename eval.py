@@ -30,10 +30,27 @@ if device.type == "cuda":
 results_summary = {}
 
 # Preload all image paths and labels once
+# only the last 100 people for testing
+# Only load up to 100 images (across all people)
 all_people_dirs = [
     (os.path.join(TEST_DIR, person), person)
     for person in os.listdir(TEST_DIR)
     if os.path.isdir(os.path.join(TEST_DIR, person))
+]
+
+# Flatten all image paths with labels, then select up to 100
+all_images = []
+for person_dir, person in all_people_dirs:
+    for img_file in os.listdir(person_dir):
+        if img_file.lower().endswith(('jpg', 'jpeg', 'png')):
+            all_images.append((os.path.join(person_dir, img_file), person))
+all_images = all_images[:100]
+
+# Rebuild all_people_dirs to only include people in the selected 100 images
+selected_people = set([person for _, person in all_images])
+all_people_dirs = [
+    (os.path.join(TEST_DIR, person), person)
+    for person in selected_people
 ]
 
 test_set = []

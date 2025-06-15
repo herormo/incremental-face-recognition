@@ -21,15 +21,20 @@ if uploaded_image:
     if mode == "Enroll New Face":
         name = st.text_input("Enter name")
         if st.button("Enroll") and name:
-            add_to_database(name, embedding, index, database)
-            st.success(f"{name} has been enrolled successfully!")
+            success = add_to_database(name, embedding, index, database)
+            if success:
+                st.success(f"{name} has been enrolled successfully!")
+            else:
+                st.warning("Face already enrolled")
 
     elif mode == "Recognize Face":
         if st.button("Identify"):
+            st.write("Button clicked. Recognizing...")
             identity, dist = recognize(embedding, index, database)
-            st.info(f"Identified as: {identity}")
-            if dist is not None:
-                st.write(f"Distance: {dist:.4f}")
+            st.write(f"Immediate check → Identified as: {identity} at distance: {dist:.4f}")
+            # st.info(f"Identified as: {identity}")
+            # if dist is not None:
+            #     st.write(f"Distance: {dist:.4f}")
 
 if st.checkbox("Show enrolled database"):
     if not database:

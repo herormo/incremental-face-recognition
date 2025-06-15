@@ -1,25 +1,25 @@
+
 name: face-recognition
 channels:
   - pytorch
+  - nvidia
   - conda-forge
   - defaults
 dependencies:
   - python=3.10
   - pip
-  - numpy
-  - faiss-cpu
   - pip:
-      - torch==2.2.2+cu118
-      - torchvision==0.17.2+cu118
+      - torch==2.2.2
+      - torchvision==0.17.2
+      - facenet-pytorch
+      - insightface
+      - onnxruntime
+      - numpy
       - pillow
-      - streamlit
-      - scikit-learn
-      - matplotlib
       - tqdm
+      - matplotlib
+      - scikit-learn
+      - faiss-cpu
       - kagglehub
-      - facenet_pytorch
-      - insightface 
-      - keras-vggface 
-      - keras 
-      - tensorflow
-        
+      - streamlit
+

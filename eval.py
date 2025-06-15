@@ -1,25 +1,55 @@
+
 import os
 import json
 import torch
 import matplotlib
-matplotlib.use("Agg")  # Fix PyCharm backend issue
+matplotlib.use("Agg")  # Prevent GUI issues
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from tqdm import tqdm
 from sklearn.preprocessing import normalize
-import kagglehub
-from pathlib import Path
 import faiss
-from src import face_ops
+from pathlib import Path
 
-# Load model config JSON
+# Replace Keras-based VGGFace functionalities with PyTorch-based implementations
+from torchvision import models
+import torch.nn as nn
+import torchvision.transforms as transforms
+
+# Helper function for preprocessing images
+def preprocess_image(image: Image.Image):
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+    return transform(image).unsqueeze(0).to(device)
+
+# Function to build the ResNet50 model as a replacement for VGGFace
+def build_model_vggface():
+    base_model = models.resnet50(pretrained=True)
+    model = nn.Sequential(
+        *list(base_model.children())[:-1],  # Remove the classification layer
+        nn.AdaptiveAvgPool2d((1, 1)),  # Global average pooling
+        nn.Flatten(),  # Flatten the output
+        nn.Linear(2048, 512),  # Projection to 512-dimensional embeddings
+        nn.ReLU(),  # Activation
+        nn.Linear(512, 512)  # Final embedding layer
+    ).to(device).eval()
+    return model
+
+# Configuration for the device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Load model configuration JSON
 with open("configs/model_config.json", "r") as f:
     MODEL_CONFIG = json.load(f)
 
-# Download and locate dataset
-DATASET_PATH = Path(kagglehub.dataset_download("vasukipatel/face-recognition-dataset"))
+# Load dataset path
+DATASET_PATH = Path("data/face-recognition-dataset")
 TEST_DIR = str(DATASET_PATH / "Original Images" / "Original Images")
+
 print("Evaluating dataset at:", TEST_DIR)
 
 results_summary = {}
@@ -49,11 +79,16 @@ for person_dir, person in all_people_dirs:
             enrollment_images[person] = img_path
             break
 
+# Iterate through each model in the configuration
 for model_name, config in MODEL_CONFIG.items():
     print(f"\n--- Benchmarking {model_name} ---")
 
-    builder_fn = getattr(face_ops, config["builder"])
-    model = builder_fn()
+    # Dynamically call the model build function
+    if model_name == "vggface":
+        model = build_model_vggface()  # Use ResNet50 for the VGGFace replacement
+    else:
+        raise ValueError(f"Unknown model name: {model_name}")
+
     dim = config["dim"]
     metric = config["metric"]
 
@@ -68,8 +103,15 @@ for model_name, config in MODEL_CONFIG.items():
     print("Enrolling one sample per person...")
     for name, img_path in enrollment_images.items():
         image = Image.open(img_path).convert("RGB")
-        embedding = face_ops.extract_embedding(model, image, model_name)
-        face_ops.add_to_database(name, embedding, index, database)
+        embedding = preprocess_image(image)
+
+        with torch.no_grad():
+            embedding = model(embedding).cpu().numpy()
+
+        embedding = normalize(embedding, axis=1).astype("float32")
+        database.append((name, embedding))
+        index.add(embedding)
+
     print(f"Enrolled {len(enrollment_images)} identities.")
 
     # Evaluate
@@ -80,9 +122,15 @@ for model_name, config in MODEL_CONFIG.items():
 
     for img_path, true_label in tqdm(test_set):
         image = Image.open(img_path).convert("RGB")
-        embedding = face_ops.extract_embedding(model, image, model_name)
-        predicted_name, dist = face_ops.recognize(embedding, index, database)
+        embedding = preprocess_image(image)
 
+        with torch.no_grad():
+            embedding = model(embedding).cpu().numpy()
+
+        embedding = normalize(embedding, axis=1).astype("float32")
+        dist, idx = index.search(embedding, 1)
+
+        predicted_name = database[idx[0][0]][0]
         if predicted_name == true_label:
             correct += 1
             distances.append(float(dist))
@@ -131,3 +179,4 @@ with open("benchmark_results.json", "w") as f:
     json.dump(results_summary, f, indent=2)
 
 print("\nBenchmarking complete. Results saved to benchmark_results.json")
+

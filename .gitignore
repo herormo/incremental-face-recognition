@@ -19,6 +19,7 @@ venv/
 
 # FAISS index files
 *.faiss
+.pkl
 
 # Streamlit cache
 .streamlit/
@@ -47,3 +48,6 @@ build/
 *.conda
 *.env
 *.yaml.lock
+
+.idea/
+.ruff_cache/

@@ -17,4 +17,5 @@ dependencies:
       - matplotlib
       - tqdm
       - kagglehub
+      - facenet_pytorch
         

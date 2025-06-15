@@ -18,4 +18,8 @@ dependencies:
       - tqdm
       - kagglehub
       - facenet_pytorch
+      - insightface 
+      - keras-vggface 
+      - keras 
+      - tensorflow
         

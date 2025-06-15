@@ -98,11 +98,11 @@ for model_name, config in MODEL_CONFIG.items():
     # Visualize
     plt.figure()
     plt.hist(distances, bins=20, color='skyblue', edgecolor='black')
-    plt.title(f"{model_name} Distance Distribution")
-    plt.xlabel("Distance")
+    plt.title(f"{model_name} Similarity Distribution")
+    plt.xlabel("Cosine Similarity")
     plt.ylabel("Frequency")
     plt.grid(True)
-    plt.savefig(f"{model_name}_distance_distribution.png")
+    plt.savefig(f"{model_name}_similarity_distribution.png")
 
     # Output error cases
     if wrong_predictions:

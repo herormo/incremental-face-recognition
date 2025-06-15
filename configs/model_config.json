@@ -2,7 +2,7 @@
   "resnet18": {
     "builder": "build_model_resnet18",
     "dim": 512,
-    "metric": "L2"
+    "metric": "cosine"
   },
   "facenet": {
     "builder": "build_model_facenet",

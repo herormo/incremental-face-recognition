@@ -75,7 +75,7 @@ def build_model_vggface():
 
 
 def load_model():
-    model = build_model()
+    model = build_model_vggface()
     if INDEX_PATH.exists():
         index = faiss.read_index(str(INDEX_PATH))
     else:

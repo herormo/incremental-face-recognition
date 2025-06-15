@@ -16,7 +16,7 @@ uploaded_image = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"]
 if uploaded_image:
     image = Image.open(uploaded_image).convert("RGB")
     st.image(image, caption="Uploaded Image", use_container_width=True)
-    embedding = extract_embedding(model, image)
+    embedding = extract_embedding(model, image, model_name="vggface")
 
     if mode == "Enroll New Face":
         name = st.text_input("Enter name")
@@ -32,7 +32,7 @@ if uploaded_image:
             st.write("Button clicked. Recognizing...")
             identity, dist = recognize(embedding, index, database)
             st.write(
-                f"Immediate check → Identified as: {identity} at distance: {dist:.4f}"
+                f"Immediate check → Identified as: {identity} at similarity: {dist:.4f}"
             )
             # st.info(f"Identified as: {identity}")
             # if dist is not None:

@@ -99,7 +99,7 @@ def extract_embedding(model, image, model_name=None):
         with torch.no_grad():
             emb = model(image_tensor).cpu().numpy()  # Get embeddings from Facenet
 
-    elif model_name == "resnet50":
+    elif model_name == "vggface":
         image_tensor = preprocess_image(image)  # Preprocess for ResNet50
         if image_tensor is None:
             print("Warning: Preprocessing failed for ResNet50.")

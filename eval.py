@@ -53,7 +53,7 @@ for person_dir, person in all_people_dirs:
         if img_file.lower().endswith(('jpg', 'jpeg', 'png')):
             if person not in enrollment_images:
                 enrollment_images[person] = []
-            if len(enrollment_images[person]) < 3:  # Limit to 3 images
+            if len(enrollment_images[person]) < 2:  # Limit to 3 images
                 enrollment_images[person].append(os.path.join(person_dir, img_file))
 
 for model_name, config in MODEL_CONFIG.items():
@@ -83,53 +83,29 @@ for model_name, config in MODEL_CONFIG.items():
     # Evaluate
     correct = 0
     total = len(test_set)
-    Similaritys = []
+    similarities = []
     wrong_predictions = []
 
     for img_path, true_label in tqdm(test_set):
         image = Image.open(img_path).convert("RGB")
-        aligned_face = face_ops.preprocess_image(image)  # Align and preprocess image on GPU
-        if aligned_face is None:
-            print(f"Warning: preprocessing failed for {img_path}")
-            continue
-        
-        # Convert to correct format for ArcFace
-        if model_name == "arcface":
-            # convert torch tensor CHW to numpy HWC (uint8 or float)
-            if isinstance(aligned_face, torch.Tensor):
-                # If batch dimension exists, remove it:
-                if aligned_face.dim() == 4 and aligned_face.shape[0] == 1:
-                    aligned_face = aligned_face[0]  # shape now (C, H, W)
-
-                np_img = aligned_face.permute(1, 2, 0).cpu().numpy()  # shape (H, W, C)
-                np_img = (np_img * 255).astype(np.uint8)
-            else:
-                np_img = np.array(aligned_face)
-
-            with torch.no_grad():
-                embedding = face_ops.extract_embedding(model, np_img, model_name)
-        else:
-            with torch.no_grad():
-                embedding = face_ops.extract_embedding(model, aligned_face, model_name)
-
-        torch.cuda.empty_cache()
+        embedding = face_ops.extract_embedding(model, image, model_name)
         predicted_name, dist = face_ops.recognize(embedding, index, database)
 
         if predicted_name == true_label:
             correct += 1
-            Similaritys.append(float(dist))
+            similarities.append(float(dist))
         else:
             wrong_predictions.append((img_path, true_label, predicted_name, float(dist)))
 
     accuracy = correct / total
-    avg_dist = np.mean(Similaritys) if Similaritys else float('nan')
+    avg_dist = np.mean(similarities) if similarities else float('nan')
 
     print(f"Accuracy: {accuracy:.2%}")
     print(f"Average Similarity (correct matches): {avg_dist:.4f}")
 
     # Visualize
     plt.figure()
-    plt.hist(Similaritys, bins=20, color='skyblue', edgecolor='black')
+    plt.hist(similarities, bins=20, color='skyblue', edgecolor='black')
     plt.title(f"{model_name} Similarity Distribution")
     plt.xlabel("Cosine Similarity")
     plt.ylabel("Frequency")

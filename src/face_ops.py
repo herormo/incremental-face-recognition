@@ -60,7 +60,7 @@ def load_model():
     if INDEX_PATH.exists():
         index = faiss.read_index(str(INDEX_PATH))
     else:
-        index = faiss.IndexFlatL2(512)  # must match embedding size
+        index = faiss.IndexFlatIP(512)  # must match embedding size
 
     if DB_PATH.exists():
         with open(DB_PATH, "rb") as f:

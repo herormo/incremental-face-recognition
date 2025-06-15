@@ -14,3 +14,7 @@ dependencies:
       - pillow
       - streamlit
       - scikit-learn
+      - matplotlib
+      - tqdm
+      - kagglehub
+        

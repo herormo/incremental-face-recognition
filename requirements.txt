@@ -5,3 +5,6 @@ pillow
 streamlit
 faiss-cpu
 scikit-learn
+matplotlib
+tqdm
+kagglehub

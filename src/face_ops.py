@@ -7,9 +7,8 @@ from PIL import Image
 from sklearn.preprocessing import normalize
 
 import torch
-import torch.nn as nn
 import torchvision.transforms as transforms
-from torchvision.models import resnet18, ResNet18_Weights
+
 
 from facenet_pytorch import InceptionResnetV1
 from insightface.app import FaceAnalysis
@@ -35,19 +34,9 @@ def preprocess_image(image: Image.Image):
     return transform(image).unsqueeze(0).to(device)
 
 def build_model():
-    weights = ResNet18_Weights.DEFAULT
-    model = resnet18(weights=weights)
-    model.fc = nn.Identity()  # use 512-d raw features
-    model.to(device)
-    model.eval()
-    return model
-
-def build_model_resnet18():
-    return build_model()  # uses your existing resnet18 setup
-
-def build_model_facenet():
     model = InceptionResnetV1(pretrained='vggface2').eval().to(device)
     return model
+
 
 def build_model_arcface():
     app = FaceAnalysis(name="buffalo_l")
@@ -55,7 +44,6 @@ def build_model_arcface():
     return app
 
 def build_model_vggface():
-    
     base_model = VGGFace(model='resnet50', include_top=False, input_shape=(224, 224, 3), pooling='avg')
     model = Model(inputs=base_model.input, outputs=base_model.output)
     return model
@@ -119,8 +107,7 @@ def add_to_database(name, embedding, index, database, duplicate_threshold=0.95):
 
     return True
 
-def recognize(embedding, index, database, threshold=1.85):
-    embedding = normalize(embedding, axis=1).astype("float32")
+def recognize(embedding, index, database, threshold=0.75):
 
     if index.ntotal == 0:
         return "No enrolled faces", None

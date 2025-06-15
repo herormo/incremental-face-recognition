@@ -22,6 +22,11 @@ DATASET_PATH = Path(kagglehub.dataset_download("vasukipatel/face-recognition-dat
 TEST_DIR = str(DATASET_PATH / "Original Images" / "Original Images")
 print("Evaluating dataset at:", TEST_DIR)
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using device:", device)
+if device.type == "cuda":
+    print("GPU:", torch.cuda.get_device_name(0))
+
 results_summary = {}
 
 # Preload all image paths and labels once
@@ -40,14 +45,16 @@ for person_dir, person in all_people_dirs:
 
 print(f"Loaded {len(test_set)} test images.")
 
-# Pre-enroll one image per identity (for all models to use the same samples)
+# Pre-enroll 3 images per person
 enrollment_images = {}
+
 for person_dir, person in all_people_dirs:
     for img_file in os.listdir(person_dir):
         if img_file.lower().endswith(('jpg', 'jpeg', 'png')):
-            img_path = os.path.join(person_dir, img_file)
-            enrollment_images[person] = img_path
-            break
+            if person not in enrollment_images:
+                enrollment_images[person] = []
+            if len(enrollment_images[person]) < 3:  # Limit to 3 images
+                enrollment_images[person].append(os.path.join(person_dir, img_file))
 
 for model_name, config in MODEL_CONFIG.items():
     print(f"\n--- Benchmarking {model_name} ---")
@@ -57,47 +64,72 @@ for model_name, config in MODEL_CONFIG.items():
     dim = config["dim"]
     metric = config["metric"]
 
-    if metric.lower() == "l2":
-        index = faiss.IndexFlatL2(dim)
-    else:
+    if metric.lower() == "cosine":
         index = faiss.IndexFlatIP(dim)
+    else:  # Default to L2 for non-normalized embeddings
+        index = faiss.IndexFlatL2(dim)
 
     database = []
-
     # Enroll selected images per identity
-    print("Enrolling one sample per person...")
-    for name, img_path in enrollment_images.items():
-        image = Image.open(img_path).convert("RGB")
-        embedding = face_ops.extract_embedding(model, image, model_name)
-        face_ops.add_to_database(name, embedding, index, database)
+    print("Enrolling samples per person...")
+    for name, img_paths in enrollment_images.items():
+        for img_path in img_paths:
+            image = Image.open(img_path).convert("RGB")
+            embedding = face_ops.extract_embedding(model, image, model_name)
+            embedding = normalize(embedding, axis=1).astype("float32")
+            face_ops.add_to_database(name, embedding, index, database)
     print(f"Enrolled {len(enrollment_images)} identities.")
 
     # Evaluate
     correct = 0
     total = len(test_set)
-    distances = []
+    Similaritys = []
     wrong_predictions = []
 
     for img_path, true_label in tqdm(test_set):
         image = Image.open(img_path).convert("RGB")
-        embedding = face_ops.extract_embedding(model, image, model_name)
+        aligned_face = face_ops.preprocess_image(image)  # Align and preprocess image on GPU
+        if aligned_face is None:
+            print(f"Warning: preprocessing failed for {img_path}")
+            continue
+        
+        # Convert to correct format for ArcFace
+        if model_name == "arcface":
+            # convert torch tensor CHW to numpy HWC (uint8 or float)
+            if isinstance(aligned_face, torch.Tensor):
+                # If batch dimension exists, remove it:
+                if aligned_face.dim() == 4 and aligned_face.shape[0] == 1:
+                    aligned_face = aligned_face[0]  # shape now (C, H, W)
+
+                np_img = aligned_face.permute(1, 2, 0).cpu().numpy()  # shape (H, W, C)
+                np_img = (np_img * 255).astype(np.uint8)
+            else:
+                np_img = np.array(aligned_face)
+
+            with torch.no_grad():
+                embedding = face_ops.extract_embedding(model, np_img, model_name)
+        else:
+            with torch.no_grad():
+                embedding = face_ops.extract_embedding(model, aligned_face, model_name)
+
+        torch.cuda.empty_cache()
         predicted_name, dist = face_ops.recognize(embedding, index, database)
 
         if predicted_name == true_label:
             correct += 1
-            distances.append(float(dist))
+            Similaritys.append(float(dist))
         else:
             wrong_predictions.append((img_path, true_label, predicted_name, float(dist)))
 
     accuracy = correct / total
-    avg_dist = np.mean(distances) if distances else float('nan')
+    avg_dist = np.mean(Similaritys) if Similaritys else float('nan')
 
     print(f"Accuracy: {accuracy:.2%}")
-    print(f"Average distance (correct matches): {avg_dist:.4f}")
+    print(f"Average Similarity (correct matches): {avg_dist:.4f}")
 
     # Visualize
     plt.figure()
-    plt.hist(distances, bins=20, color='skyblue', edgecolor='black')
+    plt.hist(Similaritys, bins=20, color='skyblue', edgecolor='black')
     plt.title(f"{model_name} Similarity Distribution")
     plt.xlabel("Cosine Similarity")
     plt.ylabel("Frequency")
@@ -108,12 +140,12 @@ for model_name, config in MODEL_CONFIG.items():
     if wrong_predictions:
         print("\nSample Wrong Predictions:")
         for path, true_label, pred, d in wrong_predictions[:5]:
-            print(f"- {os.path.basename(path)} | True: {true_label}, Predicted: {pred}, Distance: {d:.4f}")
+            print(f"- {os.path.basename(path)} | True: {true_label}, Predicted: {pred}, Similarity: {d:.4f}")
 
     # Store results
     results_summary[model_name] = {
         "accuracy": float(accuracy),
-        "average_distance": float(avg_dist),
+        "average_similarity": float(avg_dist),
         "total": total,
         "correct": correct,
         "wrong_cases": [
@@ -121,7 +153,7 @@ for model_name, config in MODEL_CONFIG.items():
                 "image": os.path.basename(p),
                 "true": t,
                 "pred": pr,
-                "distance": float(d)
+                "similarity": float(d)
             } for p, t, pr, d in wrong_predictions[:20]
         ]
     }

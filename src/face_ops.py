@@ -126,7 +126,7 @@ def recognize(embedding, index, database, threshold=1.85):
 
     D, I = index.search(embedding, 1)
 
-    if D[0][0] > threshold:
+    if D[0][0] < threshold:
         return "Unknown", D[0][0]
 
     return database[I[0][0]][0], D[0][0]

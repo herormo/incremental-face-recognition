@@ -1,3 +1,4 @@
 {
-    "finetune": "true"
+    "finetune": "true",
+    "load_model": "false"
 }

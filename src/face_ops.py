@@ -128,29 +128,24 @@ def extract_embedding(model, image, model_name=None):
 def add_to_database(name, embedding, index, database, duplicate_threshold=0.97):
     embedding = normalize(embedding, axis=1).astype("float32")
 
-    # Check for duplicates before adding
-    # if index.ntotal > 0:
-    #     D, I = index.search(embedding, 1)  # Search the closest match
-    #     if D[0][0] > duplicate_threshold:  # Higher similarity means a duplicate
-    #         print(f"Duplicate detected. Closest match: {database[I[0][0]][0]} with similarity {D[0][0]:.4f}")
-    #         return False
+    # Remove old embeddings for this person
+    database[:] = [item for item in database if item[0] != name]
 
-    # Average embeddings if the identity already exists
-    existing_embeddings = [data[1] for data in database if data[0] == name]
-    if existing_embeddings:
-        avg_embedding = np.mean(np.vstack([*existing_embeddings, embedding]), axis=0)
-        embedding = normalize(avg_embedding.reshape(1, -1), axis=1).astype("float32")
-
-    # Add embedding to FAISS and database
-    index.add(embedding)
+    # Add the new embedding
     database.append((name, embedding))
 
-    # Save updated database and FAISS index
+    # Rebuild FAISS index from database embeddings
+    all_embeddings = np.vstack([item[1] for item in database])
+    index.reset()
+    index.add(all_embeddings)
+
+    # Save updated database and index
     with open(DB_PATH, "wb") as f:
         pickle.dump(database, f)
     faiss.write_index(index, str(INDEX_PATH))
 
     return True
+
 
 
 def recognize(embedding, index, database, threshold=0.75):

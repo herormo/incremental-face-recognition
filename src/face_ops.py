@@ -6,6 +6,7 @@ from PIL import Image
 from sklearn.preprocessing import normalize
 import torch
 import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from torchvision import models
 from facenet_pytorch import InceptionResnetV1
@@ -37,12 +38,11 @@ def preprocess_image(image: Image.Image):
                 ),
             ]
         )
-        return transform(image).unsqueeze(0).to(device)  # Add batch and move to GPU/CPU
+        return transform(image).to(device)  # Add batch and move to GPU/CPU
 
     else:
         print("Error: Unsupported image format passed to preprocess_image.")
         return None
-
 
 def build_model():
     model = InceptionResnetV1(pretrained="vggface2").eval().to(device)
@@ -94,31 +94,27 @@ def extract_embedding(model, image, model_name=None):
     """
     Extract embeddings using different models based on the model_name.
     """
-    # Preprocess the input image based on the model
     if model_name == "arcface":
         # Convert PIL image to numpy array
         np_image = np.asarray(image)
         faces = model.get(np_image)
         if not faces:
             return np.zeros((1, 512), dtype="float32")
-        emb = faces[0].embedding  # Access the attribute directly, not as dict
+        emb = faces[0].embedding
         emb = np.expand_dims(emb, axis=0)
 
-    elif model_name == "facenet":
-        image_tensor = preprocess_image(image)  # Preprocess for Facenet
+    elif model_name in {"facenet", "vggface"}:
+        image_tensor = preprocess_image(image)
         if image_tensor is None:
-            print("Warning: Preprocessing failed for Facenet.")
+            print(f"Warning: Preprocessing failed for {model_name}.")
             return np.zeros((1, 512), dtype="float32")
-        with torch.no_grad():
-            emb = model(image_tensor).cpu().numpy()  # Get embeddings from Facenet
 
-    elif model_name == "vggface":
-        image_tensor = preprocess_image(image)  # Preprocess for ResNet50
-        if image_tensor is None:
-            print("Warning: Preprocessing failed for ResNet50.")
-            return np.zeros((1, 512), dtype="float32")
+        # Ensure image tensor has batch dimension
+        if image_tensor.dim() == 3:
+            image_tensor = image_tensor.unsqueeze(0)
+
         with torch.no_grad():
-            emb = model(image_tensor).cpu().numpy()  # Get embeddings from ResNet50
+            emb = model(image_tensor).cpu().numpy()
 
     else:
         raise ValueError(f"Unknown model name: {model_name}")
@@ -126,6 +122,7 @@ def extract_embedding(model, image, model_name=None):
     # Normalize embeddings for comparability
     emb = normalize(emb, axis=1).astype("float32")
     return emb
+
 
 
 def add_to_database(name, embedding, index, database, duplicate_threshold=0.97):
@@ -167,3 +164,62 @@ def recognize(embedding, index, database, threshold=0.75):
         return "Unknown", D[0][0]
 
     return database[indices[0][0]][0], D[0][0]
+
+class EnrollmentDataset(Dataset):
+    def __init__(self, enrollment_images, class_to_idx, preprocess_fn):
+        self.samples = []
+        self.labels = []
+        for cls, paths in enrollment_images.items():
+            for p in paths:
+                self.samples.append(p)
+                self.labels.append(class_to_idx[cls])
+        self.preprocess_fn = preprocess_fn
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        img_path = self.samples[idx]
+        label = self.labels[idx]
+        img = Image.open(img_path).convert("RGB")
+        img_tensor = self.preprocess_fn(img)
+        return img_tensor, label
+
+def finetune_model(model, enrollment_images, model_name, device, epochs=20, lr=1e-4, batch_size=16):
+    if model_name == "arcface":
+        print("Finetuning not supported for ArcFace model.")
+        return
+
+    model.eval()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    criterion = nn.CrossEntropyLoss()
+
+    classes = list(enrollment_images.keys())
+    class_to_idx = {cls: i for i, cls in enumerate(classes)}
+
+    dataset = EnrollmentDataset(enrollment_images, class_to_idx, preprocess_image)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    for epoch in range(epochs):
+        running_loss = 0.0
+        for imgs, labels in dataloader:
+            imgs = imgs.to(device)
+            labels = labels.to(device)
+
+            optimizer.zero_grad()
+            outputs = model(imgs)
+            if outputs.dim() == 1:
+                outputs = outputs.unsqueeze(0)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+            
+            del imgs, labels, outputs, loss
+            torch.cuda.empty_cache()
+
+        avg_loss = running_loss / len(dataloader)
+        print(f"Finetune Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.4f}")
+
+    model.eval()

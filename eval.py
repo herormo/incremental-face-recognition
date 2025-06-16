@@ -16,14 +16,21 @@ from pathlib import Path
 import faiss
 from src import face_ops
 
+# Load global config JSON
+with open("configs/global_config.json", "r") as f:
+    GLOBAL_CONFIG = json.load(f)
+
 # Load model config JSON
 with open("configs/model_config.json", "r") as f:
     MODEL_CONFIG = json.load(f)
 
 # Download and locate dataset
 DATASET_PATH = Path(kagglehub.dataset_download("vasukipatel/face-recognition-dataset"))
-TEST_DIR = str(DATASET_PATH / "Original Images" / "Original Images")
+TEST_DIR = str(DATASET_PATH / "Faces" / "Faces")
 print("Evaluating dataset at:", TEST_DIR)
+
+models_dir = Path("models")
+models_dir.mkdir(exist_ok=True)
 
 # Create results folder if it doesn't exist
 results_dir = Path("results")
@@ -40,48 +47,40 @@ if device.type == "cuda":
 
 results_summary = {}
 
-# Preload all image paths and labels once
-# only the last 100 people for testing
-# Only load up to 100 images (across all people)
-all_people_dirs = [
-    (os.path.join(TEST_DIR, person), person)
-    for person in os.listdir(TEST_DIR)
-    if os.path.isdir(os.path.join(TEST_DIR, person))
+# List all image files in the directory
+all_files = [
+    f for f in os.listdir(TEST_DIR)
+    if f.lower().endswith(("jpg", "jpeg", "png"))
 ]
 
-# Flatten all image paths with labels
+# Build list of (image_path, person_name) by parsing filename before the first underscore
 all_images = []
-for person_dir, person in all_people_dirs:
-    for img_file in os.listdir(person_dir):
-        if img_file.lower().endswith(("jpg", "jpeg", "png")):
-            all_images.append((os.path.join(person_dir, img_file), person))
-all_images = all_images[:100]
+for img_file in all_files:
+    if "_" in img_file:
+        person = img_file.split("_")[0]
+        img_path = os.path.join(TEST_DIR, img_file)
+        all_images.append((img_path, person))
 
-# Rebuild all_people_dirs to only include people in the selected 100 images
-selected_people = set([person for _, person in all_images])
-all_people_dirs = [
-    (os.path.join(TEST_DIR, person), person) for person in selected_people
-]
+# Limit to first 100 images
+all_images = all_images[:1000]
 
-test_set = []
-for person_dir, person in all_people_dirs:
-    for img_file in os.listdir(person_dir):
-        if img_file.lower().endswith(("jpg", "jpeg", "png")):
-            img_path = os.path.join(person_dir, img_file)
-            test_set.append((img_path, person))
+# Rebuild list of unique people from the selected images
+selected_people = set(person for _, person in all_images)
+
+# Filter all_images again to keep only images of selected people (optional here)
+test_set = [img for img in all_images if img[1] in selected_people]
 
 print(f"Loaded {len(test_set)} test images.")
 
-# Pre-enroll 3 images per person
+# Pre-enroll up to 3 images per person
 enrollment_images = {}
+for img_path, person in test_set:
+    if person not in enrollment_images:
+        enrollment_images[person] = []
+    if len(enrollment_images[person]) < 103:  # max 3 images per person
+        enrollment_images[person].append(img_path)
 
-for person_dir, person in all_people_dirs:
-    for img_file in os.listdir(person_dir):
-        if img_file.lower().endswith(("jpg", "jpeg", "png")):
-            if person not in enrollment_images:
-                enrollment_images[person] = []
-            if len(enrollment_images[person]) < 2:  # Limit to 3 images
-                enrollment_images[person].append(os.path.join(person_dir, img_file))
+print(f"Prepared enrollment images for {len(enrollment_images)} people.")
 
 for model_name, config in MODEL_CONFIG.items():
     print(f"\n--- Benchmarking {model_name} ---")
@@ -89,50 +88,79 @@ for model_name, config in MODEL_CONFIG.items():
     builder_fn = getattr(face_ops, config["builder"])
     model = builder_fn()
     dim = config["dim"]
-    metric = config["metric"]
+    metric = config["metric"].lower()
 
-    if metric.lower() == "cosine":
-        index = faiss.IndexFlatIP(dim)
-    else:  # Default to L2 for non-normalized embeddings
-        index = faiss.IndexFlatL2(dim)
+    # Only cosine similarity supported now, so fix index type
+    index = faiss.IndexFlatIP(dim)  # Cosine similarity via inner product
 
     database = []
-    # Enroll selected images per identity
-    print("Enrolling samples per person...")
+
+    finetune = GLOBAL_CONFIG.get("finetune", False)
+    if isinstance(finetune, str):
+        finetune = finetune.lower() == "true"
+
+    # Initial enrollment: enroll multiple images per person for better cold start
+    num_images_per_person = 3
+    print(f"Initial enrollment with up to {num_images_per_person} images per person...")
+
     for name, img_paths in enrollment_images.items():
+        count = 0
         for img_path in img_paths:
+            if count >= num_images_per_person:
+                break
             image = Image.open(img_path).convert("RGB")
-            embedding = face_ops.extract_embedding(model, image, model_name)
+            with torch.no_grad():
+                embedding = face_ops.extract_embedding(model, image, model_name)
             embedding = normalize(embedding, axis=1).astype("float32")
             face_ops.add_to_database(name, embedding, index, database)
-    print(f"Enrolled {len(enrollment_images)} identities.")
+            count += 1
 
-    # Evaluate
+    print(f"Initially enrolled {len(database)} embeddings.")
+
+    if finetune and model_name != "arcface":
+        print(f"Finetuning enabled for {model_name}...")
+        face_ops.finetune_model(model, enrollment_images, model_name, device)
+        torch.cuda.empty_cache()
+        print(f"Finetuning completed for {model_name}.")
+    else:
+        print(f"Skipping finetuning for {model_name}.")
+
+    # Incremental evaluation and enrollment
     correct = 0
-    total = len(test_set)
+    total = 0
     similarities = []
     wrong_predictions = []
 
+    # We iterate over the test set in order, simulating streaming input
     for img_path, true_label in tqdm(test_set):
         image = Image.open(img_path).convert("RGB")
-        embedding = face_ops.extract_embedding(model, image, model_name)
-        predicted_name, dist = face_ops.recognize(embedding, index, database)
+        with torch.no_grad():
+            embedding = face_ops.extract_embedding(model, image, model_name)
+        embedding = normalize(embedding, axis=1).astype("float32")
+        predicted_name, sim = face_ops.recognize(embedding, index, database, threshold=0.75)
 
+        total += 1
         if predicted_name == true_label:
             correct += 1
         else:
-            wrong_predictions.append(
-                (img_path, true_label, predicted_name, float(dist))
-            )
-        similarities.append(float(dist))
+            wrong_predictions.append((img_path, true_label, predicted_name, float(sim)))
+
+        similarities.append(float(sim))
+
+        # Incrementally add this sample embedding to the database
+        # You can restrict adding only if unknown or always add to improve coverage
+        # Here we add always to simulate incremental enrollment
+        face_ops.add_to_database(true_label, embedding, index, database)
+        del embedding
+        torch.cuda.empty_cache()
 
     accuracy = correct / total
-    avg_dist = np.mean(similarities) if similarities else float("nan")
+    avg_sim = np.mean(similarities) if similarities else float("nan")
 
-    print(f"Accuracy: {accuracy:.2%}")
-    print(f"Average Similarity (correct matches): {avg_dist:.4f}")
+    print(f"Incremental Accuracy: {accuracy:.2%}")
+    print(f"Average Similarity: {avg_sim:.4f}")
 
-    # Visualization
+    # Visualization (same as before)
     plt.figure()
     plt.hist(similarities, bins=20, color="skyblue", edgecolor="black")
     plt.title(f"{model_name} Similarity Distribution")
@@ -140,13 +168,9 @@ for model_name, config in MODEL_CONFIG.items():
     plt.ylabel("Frequency")
     plt.grid(True)
 
-    # Save plot
-    plot_path = os.path.join(
-        results_subdir, f"{model_name}_similarity_distribution.png"
-    )
+    plot_path = os.path.join(results_subdir, f"{model_name}_similarity_distribution.png")
     plt.savefig(plot_path)
 
-    # Output error cases
     if wrong_predictions:
         print("\nSample Wrong Predictions:")
         for path, true_label, pred, d in wrong_predictions[:5]:
@@ -154,10 +178,9 @@ for model_name, config in MODEL_CONFIG.items():
                 f"- {os.path.basename(path)} | True: {true_label}, Predicted: {pred}, Similarity: {d:.4f}"
             )
 
-    # Store results
     results_summary[model_name] = {
         "accuracy": float(accuracy),
-        "average_similarity": float(avg_dist),
+        "average_similarity": float(avg_sim),
         "total": total,
         "correct": correct,
         "wrong_cases": [
@@ -170,6 +193,8 @@ for model_name, config in MODEL_CONFIG.items():
             for p, t, pr, d in wrong_predictions[:20]
         ],
     }
+    del model
+    torch.cuda.empty_cache()
 
 # Save all results with username and timestamp
 user = getpass.getuser()

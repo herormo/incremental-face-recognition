@@ -1,0 +1,386 @@
+{
+  "facenet": {
+    "accuracy": 0.43,
+    "average_similarity": 0.7045955343097449,
+    "total": 1000,
+    "correct": 430,
+    "wrong_cases": [
+      {
+        "image": "Priyanka Chopra_29.jpg",
+        "true": "Priyanka Chopra",
+        "pred": "Unknown",
+        "similarity": 0.13916204869747162
+      },
+      {
+        "image": "Dwayne Johnson_31.jpg",
+        "true": "Dwayne Johnson",
+        "pred": "Unknown",
+        "similarity": 0.13506756722927094
+      },
+      {
+        "image": "Vijay Deverakonda_76.jpg",
+        "true": "Vijay Deverakonda",
+        "pred": "Unknown",
+        "similarity": 0.25908976793289185
+      },
+      {
+        "image": "Margot Robbie_12.jpg",
+        "true": "Margot Robbie",
+        "pred": "Unknown",
+        "similarity": 0.041202813386917114
+      },
+      {
+        "image": "Virat Kohli_0.jpg",
+        "true": "Virat Kohli",
+        "pred": "Unknown",
+        "similarity": 0.14801627397537231
+      },
+      {
+        "image": "Billie Eilish_73.jpg",
+        "true": "Billie Eilish",
+        "pred": "Unknown",
+        "similarity": 0.1946347951889038
+      },
+      {
+        "image": "Henry Cavill_59.jpg",
+        "true": "Henry Cavill",
+        "pred": "Unknown",
+        "similarity": 0.29722243547439575
+      },
+      {
+        "image": "Brad Pitt_52.jpg",
+        "true": "Brad Pitt",
+        "pred": "Unknown",
+        "similarity": 0.07937402278184891
+      },
+      {
+        "image": "Camila Cabello_22.jpg",
+        "true": "Camila Cabello",
+        "pred": "Unknown",
+        "similarity": 0.09887201339006424
+      },
+      {
+        "image": "Hugh Jackman_106.jpg",
+        "true": "Hugh Jackman",
+        "pred": "Unknown",
+        "similarity": 0.1708686202764511
+      },
+      {
+        "image": "Billie Eilish_82.jpg",
+        "true": "Billie Eilish",
+        "pred": "Unknown",
+        "similarity": 0.7204384803771973
+      },
+      {
+        "image": "Robert Downey Jr_51.jpg",
+        "true": "Robert Downey Jr",
+        "pred": "Unknown",
+        "similarity": 0.14381608366966248
+      },
+      {
+        "image": "Dwayne Johnson_22.jpg",
+        "true": "Dwayne Johnson",
+        "pred": "Unknown",
+        "similarity": 0.7278586626052856
+      },
+      {
+        "image": "Hugh Jackman_100.jpg",
+        "true": "Hugh Jackman",
+        "pred": "Unknown",
+        "similarity": 0.6718536019325256
+      },
+      {
+        "image": "Charlize Theron_10.jpg",
+        "true": "Charlize Theron",
+        "pred": "Unknown",
+        "similarity": 0.26585185527801514
+      },
+      {
+        "image": "Elizabeth Olsen_26.jpg",
+        "true": "Elizabeth Olsen",
+        "pred": "Unknown",
+        "similarity": 0.2082310914993286
+      },
+      {
+        "image": "Tom Cruise_11.jpg",
+        "true": "Tom Cruise",
+        "pred": "Unknown",
+        "similarity": 0.08945891261100769
+      },
+      {
+        "image": "Kashyap_0.jpg",
+        "true": "Kashyap",
+        "pred": "Unknown",
+        "similarity": 0.1963617503643036
+      },
+      {
+        "image": "Jessica Alba_103.jpg",
+        "true": "Jessica Alba",
+        "pred": "Unknown",
+        "similarity": 0.19843925535678864
+      },
+      {
+        "image": "Alexandra Daddario_71.jpg",
+        "true": "Alexandra Daddario",
+        "pred": "Unknown",
+        "similarity": 0.21459011733531952
+      }
+    ]
+  },
+  "arcface": {
+    "accuracy": 0.0,
+    "average_similarity": 0.0,
+    "total": 1000,
+    "correct": 0,
+    "wrong_cases": [
+      {
+        "image": "Priyanka Chopra_29.jpg",
+        "true": "Priyanka Chopra",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Dwayne Johnson_31.jpg",
+        "true": "Dwayne Johnson",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Vijay Deverakonda_76.jpg",
+        "true": "Vijay Deverakonda",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Margot Robbie_12.jpg",
+        "true": "Margot Robbie",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Virat Kohli_0.jpg",
+        "true": "Virat Kohli",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Billie Eilish_73.jpg",
+        "true": "Billie Eilish",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Henry Cavill_59.jpg",
+        "true": "Henry Cavill",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Brad Pitt_52.jpg",
+        "true": "Brad Pitt",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Camila Cabello_22.jpg",
+        "true": "Camila Cabello",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Hugh Jackman_106.jpg",
+        "true": "Hugh Jackman",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Billie Eilish_82.jpg",
+        "true": "Billie Eilish",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Robert Downey Jr_51.jpg",
+        "true": "Robert Downey Jr",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Dwayne Johnson_22.jpg",
+        "true": "Dwayne Johnson",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Hugh Jackman_100.jpg",
+        "true": "Hugh Jackman",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Charlize Theron_10.jpg",
+        "true": "Charlize Theron",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Elizabeth Olsen_26.jpg",
+        "true": "Elizabeth Olsen",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Tom Cruise_11.jpg",
+        "true": "Tom Cruise",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Kashyap_0.jpg",
+        "true": "Kashyap",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Jessica Alba_103.jpg",
+        "true": "Jessica Alba",
+        "pred": "Unknown",
+        "similarity": 0.0
+      },
+      {
+        "image": "Alexandra Daddario_71.jpg",
+        "true": "Alexandra Daddario",
+        "pred": "Unknown",
+        "similarity": 0.0
+      }
+    ]
+  },
+  "vggface": {
+    "accuracy": 0.36,
+    "average_similarity": 0.8892618426382541,
+    "total": 1000,
+    "correct": 360,
+    "wrong_cases": [
+      {
+        "image": "Priyanka Chopra_29.jpg",
+        "true": "Priyanka Chopra",
+        "pred": "Unknown",
+        "similarity": 0.3238397240638733
+      },
+      {
+        "image": "Dwayne Johnson_31.jpg",
+        "true": "Dwayne Johnson",
+        "pred": "Unknown",
+        "similarity": 0.380780965089798
+      },
+      {
+        "image": "Vijay Deverakonda_76.jpg",
+        "true": "Vijay Deverakonda",
+        "pred": "Unknown",
+        "similarity": 0.3862046003341675
+      },
+      {
+        "image": "Margot Robbie_12.jpg",
+        "true": "Margot Robbie",
+        "pred": "Unknown",
+        "similarity": 0.5006918907165527
+      },
+      {
+        "image": "Virat Kohli_0.jpg",
+        "true": "Virat Kohli",
+        "pred": "Unknown",
+        "similarity": 0.5294129848480225
+      },
+      {
+        "image": "Billie Eilish_73.jpg",
+        "true": "Billie Eilish",
+        "pred": "Unknown",
+        "similarity": 0.5699870586395264
+      },
+      {
+        "image": "Henry Cavill_59.jpg",
+        "true": "Henry Cavill",
+        "pred": "Unknown",
+        "similarity": 0.5067456364631653
+      },
+      {
+        "image": "Brad Pitt_52.jpg",
+        "true": "Brad Pitt",
+        "pred": "Unknown",
+        "similarity": 0.6280845999717712
+      },
+      {
+        "image": "Camila Cabello_22.jpg",
+        "true": "Camila Cabello",
+        "pred": "Unknown",
+        "similarity": 0.6250397562980652
+      },
+      {
+        "image": "Hugh Jackman_106.jpg",
+        "true": "Hugh Jackman",
+        "pred": "Unknown",
+        "similarity": 0.5549831390380859
+      },
+      {
+        "image": "Robert Downey Jr_51.jpg",
+        "true": "Robert Downey Jr",
+        "pred": "Unknown",
+        "similarity": 0.49240797758102417
+      },
+      {
+        "image": "Charlize Theron_10.jpg",
+        "true": "Charlize Theron",
+        "pred": "Unknown",
+        "similarity": 0.47002995014190674
+      },
+      {
+        "image": "Elizabeth Olsen_26.jpg",
+        "true": "Elizabeth Olsen",
+        "pred": "Unknown",
+        "similarity": 0.5301283001899719
+      },
+      {
+        "image": "Tom Cruise_11.jpg",
+        "true": "Tom Cruise",
+        "pred": "Unknown",
+        "similarity": 0.45549511909484863
+      },
+      {
+        "image": "Kashyap_0.jpg",
+        "true": "Kashyap",
+        "pred": "Unknown",
+        "similarity": 0.39313220977783203
+      },
+      {
+        "image": "Jessica Alba_103.jpg",
+        "true": "Jessica Alba",
+        "pred": "Unknown",
+        "similarity": 0.6484785676002502
+      },
+      {
+        "image": "Alexandra Daddario_71.jpg",
+        "true": "Alexandra Daddario",
+        "pred": "Unknown",
+        "similarity": 0.6187784075737
+      },
+      {
+        "image": "Anushka Sharma_4.jpg",
+        "true": "Anushka Sharma",
+        "pred": "Unknown",
+        "similarity": 0.5872676968574524
+      },
+      {
+        "image": "Roger Federer_41.jpg",
+        "true": "Roger Federer",
+        "pred": "Unknown",
+        "similarity": 0.5406535863876343
+      },
+      {
+        "image": "Natalie Portman_42.jpg",
+        "true": "Natalie Portman",
+        "pred": "Unknown",
+        "similarity": 0.5981079339981079
+      }
+    ]
+  }
+}

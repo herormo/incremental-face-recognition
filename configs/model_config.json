@@ -1,5 +1,5 @@
 {
-  "facenet": {
+  "vggface2": {
     "builder": "build_model",
     "dim": 512,
     "metric": "cosine"
@@ -9,8 +9,8 @@
     "dim": 512,
     "metric": "cosine"
   },
-  "vggface": {
-    "builder": "build_model_vggface",
+  "resnet50": {
+    "builder": "build_model_resnet50",
     "dim": 512,
     "metric": "cosine"
   }

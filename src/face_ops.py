@@ -113,6 +113,7 @@ def extract_embedding(model, image, model_name=None):
         if image_tensor.dim() == 3:
             image_tensor = image_tensor.unsqueeze(0)
 
+        model.eval()
         with torch.no_grad():
             emb = model(image_tensor).cpu().numpy()
 
@@ -149,10 +150,10 @@ def add_to_database(name, new_embedding, index, database):
     all_embeddings = np.vstack([item[1] for item in database])
     index.add(all_embeddings)
 
-    # Save database and index to disk if needed
-    # with open(DB_PATH, "wb") as f:
-    #     pickle.dump(database, f)
-    # faiss.write_index(index, str(INDEX_PATH))
+    with open(DB_PATH, "wb") as f:
+        pickle.dump(database, f)
+    faiss.write_index(index, str(INDEX_PATH))
+
 
     return True
 
@@ -191,17 +192,22 @@ class EnrollmentDataset(Dataset):
         img_tensor = self.preprocess_fn(img)
         return img_tensor, label
 
-def finetune_model(model, enrollment_images, model_name, device, epochs=20, lr=1e-4, batch_size=16):
+def finetune_model(model, enrollment_images, model_name, device, epochs=50, lr=1e-4, batch_size=16):
     if model_name == "arcface":
         print("Finetuning not supported for ArcFace model.")
         return
 
     model.train()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.CrossEntropyLoss()
-
+    
     classes = list(enrollment_images.keys())
     class_to_idx = {cls: i for i, cls in enumerate(classes)}
+
+    num_classes = len(classes)
+    classifier = torch.nn.Linear(512, num_classes).to(device)  # 512 is embedding size
+
+    optimizer = torch.optim.Adam(list(model.parameters()) + list(classifier.parameters()), lr=lr)
+    criterion = nn.CrossEntropyLoss()
+
 
     dataset = EnrollmentDataset(enrollment_images, class_to_idx, preprocess_image)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
@@ -213,7 +219,7 @@ def finetune_model(model, enrollment_images, model_name, device, epochs=20, lr=1
             labels = labels.to(device)
 
             optimizer.zero_grad()
-            outputs = model(imgs)
+            outputs = classifier(model(imgs))
             if outputs.dim() == 1:
                 outputs = outputs.unsqueeze(0)
             loss = criterion(outputs, labels)

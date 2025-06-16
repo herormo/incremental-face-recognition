@@ -63,8 +63,8 @@ for img_file in all_files:
         img_path = os.path.join(TEST_DIR, img_file)
         all_images.append((img_path, person))
 
-# Limit to first 100 images
-all_images = all_images[:1000]
+# Limit to first 1000 images
+all_images = all_images[:2000]
 
 # Rebuild list of unique people from the selected images
 selected_people = set(person for _, person in all_images)
@@ -102,7 +102,7 @@ for model_name, config in MODEL_CONFIG.items():
         finetune = finetune.lower() == "true"
 
     # Initial enrollment: enroll multiple images per person for better cold start
-    num_images_per_person = 3
+    num_images_per_person = 5
     print(f"Initial enrollment with up to {num_images_per_person} images per person...")
 
     for name, img_paths in enrollment_images.items():
@@ -121,8 +121,7 @@ for model_name, config in MODEL_CONFIG.items():
     
     model_filename = f"{model_name}_finetuned.pth"
     model_path = os.path.join(models_dir, model_filename)
-
-    if LOAD_MODEL and os.path.exists(model_path):
+    if LOAD_MODEL==True and os.path.exists(model_path):
         print(f"Loading pre-trained model from {model_path}...")
         model.load_state_dict(torch.load(model_path, map_location=device))
     else:
@@ -162,7 +161,7 @@ for model_name, config in MODEL_CONFIG.items():
         # You can restrict adding only if unknown or always add to improve coverage
         # Here we add always to simulate incremental enrollment
         face_ops.add_to_database(true_label, embedding, index, database)
-        del embedding
+        del embedding, image
         torch.cuda.empty_cache()
 
     accuracy = correct / total

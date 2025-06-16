@@ -79,7 +79,7 @@ enrollment_images = {}
 for img_path, person in test_set:
     if person not in enrollment_images:
         enrollment_images[person] = []
-    if len(enrollment_images[person]) < 103:  # max 3 images per person
+    if len(enrollment_images[person]) < 3:  # max 3 images per person
         enrollment_images[person].append(img_path)
 
 print(f"Prepared enrollment images for {len(enrollment_images)} people.")

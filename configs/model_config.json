@@ -10,7 +10,7 @@
     "metric": "cosine"
   },
   "resnet50": {
-    "builder": "build_model_vggface",
+    "builder": "build_model_resnet50",
     "dim": 512,
     "metric": "cosine"
   }

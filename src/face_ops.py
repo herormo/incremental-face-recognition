@@ -55,8 +55,7 @@ def build_model_arcface():
     return app
 
 
-def build_model_vggface():
-    # Use pretrained ResNet50 as an alternative to VGGFace
+def build_model_resnet50():
     base_model = models.resnet50(pretrained=True)
     # Modify the model to remove the classification head and use global average pooling
     model = (
@@ -75,7 +74,7 @@ def build_model_vggface():
 
 
 def load_model():
-    model = build_model_vggface()
+    model = build_model_resnet50()
     if INDEX_PATH.exists():
         index = faiss.read_index(str(INDEX_PATH))
     else:

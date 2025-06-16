@@ -51,13 +51,18 @@ def build_model():
 
 
 def build_model_arcface():
-    app = FaceAnalysis(name="buffalo_l")
-    app.prepare(ctx_id=0 if torch.cuda.is_available() else -1)
-    return app
+    try:
+        app = FaceAnalysis(name="buffalo_l")  # Use the correct ArcFace model name
+        ctx_id = 0 if torch.cuda.is_available() else -1  # Use CUDA if available, fallback to CPU
+        app.prepare(ctx_id=ctx_id, det_size=(640, 640))  # Set detection size (optional, default is 640x640)
+        return app
+    except Exception as e:
+        print(f"Error initializing ArcFace: {e}")
+        raise
 
 
 def build_model_resnet50():
-    base_model = models.resnet50(pretrained=True)
+    base_model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
     # Modify the model to remove the classification head and use global average pooling
     model = (
         nn.Sequential(
@@ -95,13 +100,17 @@ def extract_embedding(model, image, model_name=None):
     Extract embeddings using different models based on the model_name.
     """
     if model_name == "arcface":
-        # Convert PIL image to numpy array
-        np_image = np.asarray(image)
-        faces = model.get(np_image)
-        if not faces:
-            return np.zeros((1, 512), dtype="float32")
-        emb = faces[0].embedding
-        emb = np.expand_dims(emb, axis=0)
+        np_image = np.asarray(image)  # Convert PIL image to numpy
+        faces = model.get(np_image)  # Detect faces
+        
+        if not faces:  # No faces detected
+            print("ArcFace: No face detected in the image.")
+            return None
+        
+        # Extract embedding for the first detected face (or loop for all faces if needed)
+        embedding = faces[0].embedding
+        embedding = np.expand_dims(embedding, axis=0)
+        return normalize(embedding, axis=1).astype("float32")
 
     elif model_name in {"vggface2", "resnet50"}:
         image_tensor = preprocess_image(image)
@@ -132,24 +141,10 @@ def add_to_database(name, new_embedding, index, database):
     # Collect existing embeddings for this person
     existing_embeddings = [item[1] for item in database if item[0] == name]
 
-    if existing_embeddings:
-        # Stack old embeddings and the new one, then average
-        all_embeddings = np.vstack(existing_embeddings + [new_embedding])
-        avg_embedding = normalize(np.mean(all_embeddings, axis=0, keepdims=True), axis=1).astype("float32")
-    else:
-        avg_embedding = new_embedding
-
-    # Remove old embeddings for this person
-    database[:] = [item for item in database if item[0] != name]
-
-    # Append the averaged embedding
-    database.append((name, avg_embedding))
-
-    # Rebuild FAISS index with all embeddings
-    index.reset()
-    all_embeddings = np.vstack([item[1] for item in database])
-    index.add(all_embeddings)
-
+    existing_embeddings.append(new_embedding)
+    # Save all embeddings in the database
+    database.append((name, new_embedding))
+    index.add(new_embedding)
     with open(DB_PATH, "wb") as f:
         pickle.dump(database, f)
     faiss.write_index(index, str(INDEX_PATH))
@@ -158,19 +153,16 @@ def add_to_database(name, new_embedding, index, database):
     return True
 
 
-
-
 def recognize(embedding, index, database, threshold=0.75):
     if index.ntotal == 0:
-        return "No enrolled faces", None
+        return "No enrolled faces", 0.0  # Default similarity to 0.0
 
     D, indices = index.search(embedding, 1)  # Nearest neighbor search
 
-    # Analyze distances for matches
-    if D[0][0] < threshold:  # If similarity is below the threshold
-        return "Unknown", D[0][0]
-
-    return database[indices[0][0]][0], D[0][0]
+    if D[0][0] >= threshold:  # Similarity meets/exceeds the threshold
+        return database[indices[0][0]][0], D[0][0]
+    else:
+        return "Unknown", D[0][0]  # Return similarity even if below threshold
 
 class EnrollmentDataset(Dataset):
     def __init__(self, enrollment_images, class_to_idx, preprocess_fn):
@@ -192,46 +184,75 @@ class EnrollmentDataset(Dataset):
         img_tensor = self.preprocess_fn(img)
         return img_tensor, label
 
-def finetune_model(model, enrollment_images, model_name, device, epochs=200, lr=1e-3, batch_size=16):
-    if model_name == "arcface":
-        print("Finetuning not supported for ArcFace model.")
-        return
-
-    model.train()
-    
+def finetune_model(model, enrollment_images, model_name, device, epochs=10, lr=1e-3, batch_size=16):
     classes = list(enrollment_images.keys())
     class_to_idx = {cls: i for i, cls in enumerate(classes)}
-
     num_classes = len(classes)
-    classifier = torch.nn.Linear(512, num_classes).to(device)  # 512 is embedding size
 
-    optimizer = torch.optim.Adam(list(model.parameters()) + list(classifier.parameters()), lr=lr)
-    criterion = nn.CrossEntropyLoss()
+    # Avoid fine-tuning unique parts of ArcFace (only train classifier layers)
+    if model_name == "arcface":
+        classifier = torch.nn.Linear(512, num_classes).to(device)  # ArcFace embeddings are 512-D
+        optimizer = torch.optim.Adam(classifier.parameters(), lr=lr)
+        criterion = nn.CrossEntropyLoss()
 
+        dataset = EnrollmentDataset(enrollment_images, class_to_idx, preprocess_image)
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    dataset = EnrollmentDataset(enrollment_images, class_to_idx, preprocess_image)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+        model.train()  # Fine-tune ArcFace indirectly with classification head
+        for epoch in range(epochs):
+            running_loss = 0.0
+            for imgs, labels in dataloader:
+                imgs = imgs.to(device)
+                labels = labels.to(device)
 
-    for epoch in range(epochs):
-        running_loss = 0.0
-        for imgs, labels in dataloader:
-            imgs = imgs.to(device)
-            labels = labels.to(device)
+                # Extract embeddings using ArcFace
+                embeddings = []
+                for img in imgs:
+                    embedding = extract_embedding(model, img, model_name="arcface")  # Extract ArcFace embeddings
+                    if embedding is not None:
+                        embeddings.append(embedding)
+                embeddings = torch.tensor(np.vstack(embeddings)).to(device)
 
-            optimizer.zero_grad()
-            outputs = classifier(model(imgs))
-            if outputs.dim() == 1:
-                outputs = outputs.unsqueeze(0)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
+                # Pass embeddings through the classifier head
+                outputs = classifier(embeddings)
+                optimizer.zero_grad()
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                running_loss += loss.item()
 
-            running_loss += loss.item()
-            
-            del imgs, labels, outputs, loss
-            torch.cuda.empty_cache()
+            avg_loss = running_loss / len(dataloader)
+            print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.4f}")
 
-        avg_loss = running_loss / len(dataloader)
-        print(f"Finetune Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.4f}")
+        model.eval()
+        return True
 
-    model.eval()
+    # For other models (VGGFace2, ResNet50), the fine-tuning logic remains the same
+    else:
+        model.train()
+        classifier = torch.nn.Linear(512, num_classes).to(device)
+        optimizer = torch.optim.Adam(list(model.parameters()) + list(classifier.parameters()), lr=lr)
+        criterion = nn.CrossEntropyLoss()
+
+        dataset = EnrollmentDataset(enrollment_images, class_to_idx, preprocess_image)
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+        for epoch in range(epochs):
+            running_loss = 0.0
+            for imgs, labels in dataloader:
+                imgs = imgs.to(device)
+                labels = labels.to(device)
+
+                optimizer.zero_grad()
+                outputs = classifier(model(imgs))
+                if outputs.dim() == 1:
+                    outputs = outputs.unsqueeze(0)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                running_loss += loss.item()
+
+            avg_loss = running_loss / len(dataloader)
+            print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_loss:.4f}")
+
+        model.eval()

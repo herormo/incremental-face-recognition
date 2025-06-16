@@ -28,7 +28,7 @@ with open("configs/model_config.json", "r") as f:
 DATASET_PATH = Path(kagglehub.dataset_download("vasukipatel/face-recognition-dataset"))
 TEST_DIR = str(DATASET_PATH / "Faces" / "Faces")
 print("Evaluating dataset at:", TEST_DIR)
-LOAD_MODEl = GLOBAL_CONFIG.get("load_model", False)
+LOAD_MODEL = GLOBAL_CONFIG.get("load_model", False)
 
 models_dir = Path("models")
 models_dir.mkdir(exist_ok=True)
@@ -122,7 +122,7 @@ for model_name, config in MODEL_CONFIG.items():
     model_filename = f"{model_name}_finetuned.pth"
     model_path = os.path.join(models_dir, model_filename)
 
-    if LOAD_MODEl and os.path.exists(model_path):
+    if LOAD_MODEL and os.path.exists(model_path):
         print(f"Loading pre-trained model from {model_path}...")
         model.load_state_dict(torch.load(model_path, map_location=device))
     else:

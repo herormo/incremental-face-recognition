@@ -185,7 +185,7 @@ def finetune_model(model, enrollment_images, model_name, device, epochs=20, lr=1
         print("Finetuning not supported for ArcFace model.")
         return
 
-    model.eval()
+    model.train()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
 

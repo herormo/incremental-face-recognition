@@ -1,0 +1,4 @@
+{
+    "finetune": "True",
+    "load_model": "False"
+}

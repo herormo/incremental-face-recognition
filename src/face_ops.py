@@ -6,10 +6,12 @@ from PIL import Image
 from sklearn.preprocessing import normalize
 import torch
 import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 from torchvision import models
 from facenet_pytorch import InceptionResnetV1
 from insightface.app import FaceAnalysis
+
 
 DB_PATH = Path("data/database.pkl")
 INDEX_PATH = Path("data/index.faiss")
@@ -37,12 +39,11 @@ def preprocess_image(image: Image.Image):
                 ),
             ]
         )
-        return transform(image).unsqueeze(0).to(device)  # Add batch and move to GPU/CPU
+        return transform(image).to(device)  # Add batch and move to GPU/CPU
 
     else:
         print("Error: Unsupported image format passed to preprocess_image.")
         return None
-
 
 def build_model():
     model = InceptionResnetV1(pretrained="vggface2").eval().to(device)
@@ -55,8 +56,7 @@ def build_model_arcface():
     return app
 
 
-def build_model_vggface():
-    # Use pretrained ResNet50 as an alternative to VGGFace
+def build_model_resnet50():
     base_model = models.resnet50(pretrained=True)
     # Modify the model to remove the classification head and use global average pooling
     model = (
@@ -75,7 +75,7 @@ def build_model_vggface():
 
 
 def load_model():
-    model = build_model_vggface()
+    model = build_model_resnet50()
     if INDEX_PATH.exists():
         index = faiss.read_index(str(INDEX_PATH))
     else:
@@ -94,31 +94,28 @@ def extract_embedding(model, image, model_name=None):
     """
     Extract embeddings using different models based on the model_name.
     """
-    # Preprocess the input image based on the model
     if model_name == "arcface":
         # Convert PIL image to numpy array
         np_image = np.asarray(image)
         faces = model.get(np_image)
         if not faces:
             return np.zeros((1, 512), dtype="float32")
-        emb = faces[0].embedding  # Access the attribute directly, not as dict
+        emb = faces[0].embedding
         emb = np.expand_dims(emb, axis=0)
 
-    elif model_name == "facenet":
-        image_tensor = preprocess_image(image)  # Preprocess for Facenet
+    elif model_name in {"vggface2", "resnet50"}:
+        image_tensor = preprocess_image(image)
         if image_tensor is None:
-            print("Warning: Preprocessing failed for Facenet.")
+            print(f"Warning: Preprocessing failed for {model_name}.")
             return np.zeros((1, 512), dtype="float32")
-        with torch.no_grad():
-            emb = model(image_tensor).cpu().numpy()  # Get embeddings from Facenet
 
-    elif model_name == "vggface":
-        image_tensor = preprocess_image(image)  # Preprocess for ResNet50
-        if image_tensor is None:
-            print("Warning: Preprocessing failed for ResNet50.")
-            return np.zeros((1, 512), dtype="float32")
+        # Ensure image tensor has batch dimension
+        if image_tensor.dim() == 3:
+            image_tensor = image_tensor.unsqueeze(0)
+
+        model.eval()
         with torch.no_grad():
-            emb = model(image_tensor).cpu().numpy()  # Get embeddings from ResNet50
+            emb = model(image_tensor).cpu().numpy()
 
     else:
         raise ValueError(f"Unknown model name: {model_name}")
@@ -128,32 +125,39 @@ def extract_embedding(model, image, model_name=None):
     return emb
 
 
-def add_to_database(name, embedding, index, database, duplicate_threshold=0.97):
-    embedding = normalize(embedding, axis=1).astype("float32")
 
-    # Check for duplicates before adding
-    # if index.ntotal > 0:
-    #     D, I = index.search(embedding, 1)  # Search the closest match
-    #     if D[0][0] > duplicate_threshold:  # Higher similarity means a duplicate
-    #         print(f"Duplicate detected. Closest match: {database[I[0][0]][0]} with similarity {D[0][0]:.4f}")
-    #         return False
+def add_to_database(name, new_embedding, index, database):
+    new_embedding = normalize(new_embedding, axis=1).astype("float32")
 
-    # Average embeddings if the identity already exists
-    existing_embeddings = [data[1] for data in database if data[0] == name]
+    # Collect existing embeddings for this person
+    existing_embeddings = [item[1] for item in database if item[0] == name]
+
     if existing_embeddings:
-        avg_embedding = np.mean(np.vstack([*existing_embeddings, embedding]), axis=0)
-        embedding = normalize(avg_embedding.reshape(1, -1), axis=1).astype("float32")
+        # Stack old embeddings and the new one, then average
+        all_embeddings = np.vstack(existing_embeddings + [new_embedding])
+        avg_embedding = normalize(np.mean(all_embeddings, axis=0, keepdims=True), axis=1).astype("float32")
+    else:
+        avg_embedding = new_embedding
 
-    # Add embedding to FAISS and database
-    index.add(embedding)
-    database.append((name, embedding))
+    # Remove old embeddings for this person
+    database[:] = [item for item in database if item[0] != name]
 
-    # Save updated database and FAISS index
+    # Append the averaged embedding
+    database.append((name, avg_embedding))
+
+    # Rebuild FAISS index with all embeddings
+    index.reset()
+    all_embeddings = np.vstack([item[1] for item in database])
+    index.add(all_embeddings)
+
     with open(DB_PATH, "wb") as f:
         pickle.dump(database, f)
     faiss.write_index(index, str(INDEX_PATH))
 
+
     return True
+
+
 
 
 def recognize(embedding, index, database, threshold=0.75):
@@ -167,3 +171,67 @@ def recognize(embedding, index, database, threshold=0.75):
         return "Unknown", D[0][0]
 
     return database[indices[0][0]][0], D[0][0]
+
+class EnrollmentDataset(Dataset):
+    def __init__(self, enrollment_images, class_to_idx, preprocess_fn):
+        self.samples = []
+        self.labels = []
+        for cls, paths in enrollment_images.items():
+            for p in paths:
+                self.samples.append(p)
+                self.labels.append(class_to_idx[cls])
+        self.preprocess_fn = preprocess_fn
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        img_path = self.samples[idx]
+        label = self.labels[idx]
+        img = Image.open(img_path).convert("RGB")
+        img_tensor = self.preprocess_fn(img)
+        return img_tensor, label
+
+def finetune_model(model, enrollment_images, model_name, device, epochs=200, lr=1e-3, batch_size=16):
+    if model_name == "arcface":
+        print("Finetuning not supported for ArcFace model.")
+        return
+
+    model.train()
+    
+    classes = list(enrollment_images.keys())
+    class_to_idx = {cls: i for i, cls in enumerate(classes)}
+
+    num_classes = len(classes)
+    classifier = torch.nn.Linear(512, num_classes).to(device)  # 512 is embedding size
+
+    optimizer = torch.optim.Adam(list(model.parameters()) + list(classifier.parameters()), lr=lr)
+    criterion = nn.CrossEntropyLoss()
+
+
+    dataset = EnrollmentDataset(enrollment_images, class_to_idx, preprocess_image)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    for epoch in range(epochs):
+        running_loss = 0.0
+        for imgs, labels in dataloader:
+            imgs = imgs.to(device)
+            labels = labels.to(device)
+
+            optimizer.zero_grad()
+            outputs = classifier(model(imgs))
+            if outputs.dim() == 1:
+                outputs = outputs.unsqueeze(0)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+            
+            del imgs, labels, outputs, loss
+            torch.cuda.empty_cache()
+
+        avg_loss = running_loss / len(dataloader)
+        print(f"Finetune Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.4f}")
+
+    model.eval()

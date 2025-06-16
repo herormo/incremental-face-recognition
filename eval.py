@@ -28,9 +28,11 @@ with open("configs/model_config.json", "r") as f:
 DATASET_PATH = Path(kagglehub.dataset_download("vasukipatel/face-recognition-dataset"))
 TEST_DIR = str(DATASET_PATH / "Faces" / "Faces")
 print("Evaluating dataset at:", TEST_DIR)
+LOAD_MODEl = GLOBAL_CONFIG.get("load_model", False)
 
 models_dir = Path("models")
 models_dir.mkdir(exist_ok=True)
+
 
 # Create results folder if it doesn't exist
 results_dir = Path("results")
@@ -116,14 +118,23 @@ for model_name, config in MODEL_CONFIG.items():
             count += 1
 
     print(f"Initially enrolled {len(database)} embeddings.")
+    
+    model_filename = f"{model_name}_finetuned.pth"
+    model_path = os.path.join(models_dir, model_filename)
 
-    if finetune and model_name != "arcface":
-        print(f"Finetuning enabled for {model_name}...")
-        face_ops.finetune_model(model, enrollment_images, model_name, device)
-        torch.cuda.empty_cache()
-        print(f"Finetuning completed for {model_name}.")
+    if LOAD_MODEl and os.path.exists(model_path):
+        print(f"Loading pre-trained model from {model_path}...")
+        model.load_state_dict(torch.load(model_path, map_location=device))
     else:
-        print(f"Skipping finetuning for {model_name}.")
+        if finetune and model_name != "arcface":
+            print(f"Finetuning enabled for {model_name}...")
+            face_ops.finetune_model(model, enrollment_images, model_name, device)
+            print(f"Saving finetuned model to {model_path}")
+            torch.save(model.state_dict(), model_path)
+            torch.cuda.empty_cache()
+            print(f"Finetuning completed for {model_name}.")
+        else:
+            print(f"Skipping finetuning for {model_name}.")
 
     # Incremental evaluation and enrollment
     correct = 0

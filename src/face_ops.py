@@ -125,26 +125,37 @@ def extract_embedding(model, image, model_name=None):
 
 
 
-def add_to_database(name, embedding, index, database, duplicate_threshold=0.97):
-    embedding = normalize(embedding, axis=1).astype("float32")
+def add_to_database(name, new_embedding, index, database):
+    new_embedding = normalize(new_embedding, axis=1).astype("float32")
+
+    # Collect existing embeddings for this person
+    existing_embeddings = [item[1] for item in database if item[0] == name]
+
+    if existing_embeddings:
+        # Stack old embeddings and the new one, then average
+        all_embeddings = np.vstack(existing_embeddings + [new_embedding])
+        avg_embedding = normalize(np.mean(all_embeddings, axis=0, keepdims=True), axis=1).astype("float32")
+    else:
+        avg_embedding = new_embedding
 
     # Remove old embeddings for this person
     database[:] = [item for item in database if item[0] != name]
 
-    # Add the new embedding
-    database.append((name, embedding))
+    # Append the averaged embedding
+    database.append((name, avg_embedding))
 
-    # Rebuild FAISS index from database embeddings
-    all_embeddings = np.vstack([item[1] for item in database])
+    # Rebuild FAISS index with all embeddings
     index.reset()
+    all_embeddings = np.vstack([item[1] for item in database])
     index.add(all_embeddings)
 
-    # Save updated database and index
-    with open(DB_PATH, "wb") as f:
-        pickle.dump(database, f)
-    faiss.write_index(index, str(INDEX_PATH))
+    # Save database and index to disk if needed
+    # with open(DB_PATH, "wb") as f:
+    #     pickle.dump(database, f)
+    # faiss.write_index(index, str(INDEX_PATH))
 
     return True
+
 
 
 

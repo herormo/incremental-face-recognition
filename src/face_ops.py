@@ -12,6 +12,7 @@ from torchvision import models
 from facenet_pytorch import InceptionResnetV1
 from insightface.app import FaceAnalysis
 
+
 DB_PATH = Path("data/database.pkl")
 INDEX_PATH = Path("data/index.faiss")
 
@@ -102,7 +103,7 @@ def extract_embedding(model, image, model_name=None):
         emb = faces[0].embedding
         emb = np.expand_dims(emb, axis=0)
 
-    elif model_name in {"facenet", "vggface"}:
+    elif model_name in {"vggface2", "resnet50"}:
         image_tensor = preprocess_image(image)
         if image_tensor is None:
             print(f"Warning: Preprocessing failed for {model_name}.")
@@ -191,7 +192,7 @@ class EnrollmentDataset(Dataset):
         img_tensor = self.preprocess_fn(img)
         return img_tensor, label
 
-def finetune_model(model, enrollment_images, model_name, device, epochs=50, lr=1e-4, batch_size=16):
+def finetune_model(model, enrollment_images, model_name, device, epochs=200, lr=1e-3, batch_size=16):
     if model_name == "arcface":
         print("Finetuning not supported for ArcFace model.")
         return

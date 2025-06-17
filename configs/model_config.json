@@ -4,6 +4,11 @@
     "dim": 512,
     "metric": "cosine"
   },
+  "arcface": {
+    "builder": "build_model_arcface",
+    "dim": 512,
+    "metric": "cosine"
+  },
   "resnet50": {
     "builder": "build_model_resnet50",
     "dim": 512,

@@ -13,9 +13,6 @@ venv/
 # Jupyter notebook checkpoints
 .ipynb_checkpoints
 
-# PyTorch and model artifacts
-*.pth
-*.pt
 
 # FAISS index files
 *.faiss

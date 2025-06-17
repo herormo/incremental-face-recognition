@@ -1,3 +1,4 @@
+from sklearn.preprocessing import normalize
 import streamlit as st
 from src.face_ops import extract_embedding, recognize, add_to_database, load_model
 from PIL import Image
@@ -16,7 +17,7 @@ uploaded_image = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"]
 if uploaded_image:
     image = Image.open(uploaded_image).convert("RGB")
     st.image(image, caption="Uploaded Image", use_container_width=True)
-    embedding = extract_embedding(model, image, model_name="vggface")
+    embedding = extract_embedding(model, image, model_name="vggface2")
 
     if mode == "Enroll New Face":
         name = st.text_input("Enter name")
@@ -30,13 +31,16 @@ if uploaded_image:
     elif mode == "Recognize Face":
         if st.button("Identify"):
             st.write("Button clicked. Recognizing...")
+            embedding = normalize(embedding, axis=1).astype("float32")
             identity, dist = recognize(embedding, index, database)
-            st.write(
+            if dist is not None or identity!= "Unknown":
+                st.write(
                 f"Immediate check → Identified as: {identity} at similarity: {dist:.4f}"
             )
-            # st.info(f"Identified as: {identity}")
-            # if dist is not None:
-            #     st.write(f"Distance: {dist:.4f}")
+            else:
+                st.write("No match found.")
+           
+    
 
 if st.checkbox("Show enrolled database"):
     if not database:

@@ -11,6 +11,7 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 from sklearn.preprocessing import normalize
+from sklearn.metrics.pairwise import cosine_distances
 import kagglehub
 from pathlib import Path
 import faiss
@@ -26,7 +27,7 @@ with open("configs/model_config.json", "r") as f:
 
 # Download and locate dataset
 DATASET_PATH = Path(kagglehub.dataset_download("vasukipatel/face-recognition-dataset"))
-TEST_DIR = str(DATASET_PATH / "Faces" / "Faces")
+TEST_DIR = str(DATASET_PATH / "Original Images" / "Original Images")
 print("Evaluating dataset at:", TEST_DIR)
 LOAD_MODEL = GLOBAL_CONFIG.get("load_model", False)
 
@@ -56,15 +57,19 @@ all_files = [
 ]
 
 # Build list of (image_path, person_name) by parsing filename before the first underscore
+# List all image files recursively, with folder name as person label
 all_images = []
-for img_file in all_files:
-    if "_" in img_file:
-        person = img_file.split("_")[0]
-        img_path = os.path.join(TEST_DIR, img_file)
-        all_images.append((img_path, person))
 
-# Limit to first 1000 images
-all_images = all_images[:2000]
+for person_dir in os.listdir(TEST_DIR):
+    person_path = os.path.join(TEST_DIR, person_dir)
+    if os.path.isdir(person_path):
+        for img_file in os.listdir(person_path):
+            if img_file.lower().endswith(("jpg", "jpeg", "png")):
+                img_path = os.path.join(person_path, img_file)
+                all_images.append((img_path, person_dir))
+
+# Limit to first 500 images
+all_images = all_images[:250]
 
 # Rebuild list of unique people from the selected images
 selected_people = set(person for _, person in all_images)
@@ -74,21 +79,15 @@ test_set = [img for img in all_images if img[1] in selected_people]
 
 print(f"Loaded {len(test_set)} test images.")
 
-# Pre-enroll up to 3 images per person
+# Pre-enroll images for each person
 enrollment_images = {}
-for img_path, person in test_set:
-    if person not in enrollment_images:
-        enrollment_images[person] = []
-    if len(enrollment_images[person]) < 3:  # max 3 images per person
-        enrollment_images[person].append(img_path)
-
-print(f"Prepared enrollment images for {len(enrollment_images)} people.")
 
 for model_name, config in MODEL_CONFIG.items():
     print(f"\n--- Benchmarking {model_name} ---")
 
     builder_fn = getattr(face_ops, config["builder"])
     model = builder_fn()
+
     dim = config["dim"]
     metric = config["metric"].lower()
 
@@ -102,39 +101,50 @@ for model_name, config in MODEL_CONFIG.items():
         finetune = finetune.lower() == "true"
 
     # Initial enrollment: enroll multiple images per person for better cold start
-    num_images_per_person = 5
+    num_images_per_person = 3
     print(f"Initial enrollment with up to {num_images_per_person} images per person...")
 
-    for name, img_paths in enrollment_images.items():
-        count = 0
-        for img_path in img_paths:
-            if count >= num_images_per_person:
-                break
+    # Pre-enroll images for each person
+    enrollment_images = {}
+
+    # Group images by person
+    for img_path, person in test_set:
+        if person not in enrollment_images:
+            enrollment_images[person] = []
+        enrollment_images[person].append(img_path)
+
+    # Select diverse images among all available for each person
+    def select_diverse_images(image_paths, model, max_images=3):
+        embeddings = []
+        for img_path in image_paths:
             image = Image.open(img_path).convert("RGB")
-            with torch.no_grad():
-                embedding = face_ops.extract_embedding(model, image, model_name)
-            embedding = normalize(embedding, axis=1).astype("float32")
-            face_ops.add_to_database(name, embedding, index, database)
-            count += 1
+            embedding = face_ops.extract_embedding(model, image, model_name)  # Add correct model_name parameter
+            if embedding is not None:
+                embeddings.append((img_path, embedding))
+        # Use all images if fewer than max_images
+        if len(embeddings) <= max_images:
+            return [e[0] for e in embeddings]
 
-    print(f"Initially enrolled {len(database)} embeddings.")
+        # Calculate pairwise distances and choose diverse embeddings
+        embeddings_array = np.vstack([e[1] for e in embeddings])
+        diversity_scores = cosine_distances(embeddings_array, embeddings_array).sum(axis=1)
+        selected = sorted(zip(diversity_scores, embeddings), key=lambda x: -x[0])[:max_images]
+        return [s[1][0] for s in selected]  # Return selected image paths
+
+    # Apply selection
+    for person, image_paths in enrollment_images.items():
+        diverse_paths = select_diverse_images(image_paths, model, max_images=3)
+        enrollment_images[person] = diverse_paths
+
+    print(f"Prepared enrollment images for {len(enrollment_images)} people with diversity.")
     
-    model_filename = f"{model_name}_finetuned.pth"
-    model_path = os.path.join(models_dir, model_filename)
-    if LOAD_MODEL==True and os.path.exists(model_path):
-        print(f"Loading pre-trained model from {model_path}...")
-        model.load_state_dict(torch.load(model_path, map_location=device))
-    else:
-        if finetune and model_name != "arcface":
-            print(f"Finetuning enabled for {model_name}...")
-            face_ops.finetune_model(model, enrollment_images, model_name, device)
-            print(f"Saving finetuned model to {model_path}")
-            torch.save(model.state_dict(), model_path)
-            torch.cuda.empty_cache()
-            print(f"Finetuning completed for {model_name}.")
-        else:
-            print(f"Skipping finetuning for {model_name}.")
-
+    if finetune:
+        print(f"Fine-tuning enabled for {model_name}...")
+        model = face_ops.finetune_model(model, enrollment_images, model_name, device)
+        if model_name.lower() != "arcface":
+           # Save the fine-tuned model with a timestamp
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            torch.save(model.state_dict(), models_dir / f"{model_name}_finetuned_{timestamp}.pt")
     # Incremental evaluation and enrollment
     correct = 0
     total = 0
@@ -146,6 +156,10 @@ for model_name, config in MODEL_CONFIG.items():
         image = Image.open(img_path).convert("RGB")
         with torch.no_grad():
             embedding = face_ops.extract_embedding(model, image, model_name)
+        if embedding is None:
+            print(f"ArcFace: No face detected in the image.")
+            continue  # skip this image
+
         embedding = normalize(embedding, axis=1).astype("float32")
         predicted_name, sim = face_ops.recognize(embedding, index, database, threshold=0.75)
 

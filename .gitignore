@@ -50,4 +50,4 @@ build/
 *.yaml.lock
 
 .idea/
-.ruff_cache/
+.ruff_cache/models/*.pt

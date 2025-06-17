@@ -27,7 +27,7 @@ with open("configs/model_config.json", "r") as f:
 
 # Download and locate dataset
 DATASET_PATH = Path(kagglehub.dataset_download("vasukipatel/face-recognition-dataset"))
-TEST_DIR = str(DATASET_PATH / "Faces" / "Faces")
+TEST_DIR = str(DATASET_PATH / "Original Images" / "Original Images")
 print("Evaluating dataset at:", TEST_DIR)
 LOAD_MODEL = GLOBAL_CONFIG.get("load_model", False)
 
@@ -57,15 +57,19 @@ all_files = [
 ]
 
 # Build list of (image_path, person_name) by parsing filename before the first underscore
+# List all image files recursively, with folder name as person label
 all_images = []
-for img_file in all_files:
-    if "_" in img_file:
-        person = img_file.split("_")[0]
-        img_path = os.path.join(TEST_DIR, img_file)
-        all_images.append((img_path, person))
 
-# Limit to first 1000 images
-# all_images = all_images[:2000]
+for person_dir in os.listdir(TEST_DIR):
+    person_path = os.path.join(TEST_DIR, person_dir)
+    if os.path.isdir(person_path):
+        for img_file in os.listdir(person_path):
+            if img_file.lower().endswith(("jpg", "jpeg", "png")):
+                img_path = os.path.join(person_path, img_file)
+                all_images.append((img_path, person_dir))
+
+# Limit to first 500 images
+all_images = all_images[:250]
 
 # Rebuild list of unique people from the selected images
 selected_people = set(person for _, person in all_images)
@@ -97,7 +101,7 @@ for model_name, config in MODEL_CONFIG.items():
         finetune = finetune.lower() == "true"
 
     # Initial enrollment: enroll multiple images per person for better cold start
-    num_images_per_person = 50
+    num_images_per_person = 3
     print(f"Initial enrollment with up to {num_images_per_person} images per person...")
 
     # Pre-enroll images for each person
@@ -136,7 +140,11 @@ for model_name, config in MODEL_CONFIG.items():
     
     if finetune:
         print(f"Fine-tuning enabled for {model_name}...")
-        face_ops.finetune_model(model, enrollment_images, model_name, device)
+        model = face_ops.finetune_model(model, enrollment_images, model_name, device)
+        if model_name.lower() != "arcface":
+           # Save the fine-tuned model with a timestamp
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            torch.save(model.state_dict(), models_dir / f"{model_name}_finetuned_{timestamp}.pt")
     # Incremental evaluation and enrollment
     correct = 0
     total = 0
@@ -148,6 +156,10 @@ for model_name, config in MODEL_CONFIG.items():
         image = Image.open(img_path).convert("RGB")
         with torch.no_grad():
             embedding = face_ops.extract_embedding(model, image, model_name)
+        if embedding is None:
+            print(f"ArcFace: No face detected in the image.")
+            continue  # skip this image
+
         embedding = normalize(embedding, axis=1).astype("float32")
         predicted_name, sim = face_ops.recognize(embedding, index, database, threshold=0.75)
 

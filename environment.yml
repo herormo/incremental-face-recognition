@@ -13,7 +13,7 @@ dependencies:
       - torchvision==0.17.2
       - facenet-pytorch
       - insightface
-      - onnxruntime
+      - onnxruntime-gpu
       - numpy
       - pillow
       - tqdm

@@ -9,6 +9,9 @@ model, index, database = load_model()
 st.set_page_config(page_title="Incremental Face Recognition", layout="centered")
 st.title("Incremental Face Recognition System (PyTorch)")
 
+# Model selection
+model_name = st.selectbox("Choose model", ["resnet50", "arcface", "vggface2"])
+
 mode = st.radio("Choose mode", ["Enroll New Face", "Recognize Face"])
 
 uploaded_image = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"])
@@ -32,7 +35,7 @@ if uploaded_image:
             st.write("Button clicked. Recognizing...")
             identity, dist = recognize(embedding, index, database)
             # check if the image is unrecognizable (dist is None)
-            if dist is None:
+            if identity == "Unknown":
                 st.warning("No face detected")
             else:
                 st.write(

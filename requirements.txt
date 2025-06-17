@@ -2,7 +2,7 @@ torch==2.2.2
 torchvision==0.17.2
 facenet-pytorch
 insightface
-onnxruntime
+onnxruntime-gpu
 numpy
 pillow
 tqdm

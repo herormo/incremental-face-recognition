@@ -65,7 +65,7 @@ for img_file in all_files:
         all_images.append((img_path, person))
 
 # Limit to first 1000 images
-all_images = all_images[:2000]
+# all_images = all_images[:2000]
 
 # Rebuild list of unique people from the selected images
 selected_people = set(person for _, person in all_images)
@@ -97,7 +97,7 @@ for model_name, config in MODEL_CONFIG.items():
         finetune = finetune.lower() == "true"
 
     # Initial enrollment: enroll multiple images per person for better cold start
-    num_images_per_person = 5
+    num_images_per_person = 50
     print(f"Initial enrollment with up to {num_images_per_person} images per person...")
 
     # Pre-enroll images for each person

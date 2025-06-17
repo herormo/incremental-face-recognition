@@ -195,7 +195,7 @@ class EnrollmentDataset(Dataset):
             img_tensor = img_tensor.squeeze(0)  # Remove extra batch dim if present
         return img_tensor, label
 
-def finetune_model(model, enrollment_images, model_name, device, epochs=10, lr=1e-3, batch_size=16):
+def finetune_model(model, enrollment_images, model_name, device, epochs=20, lr=1e-3, batch_size=16):
     classes = list(enrollment_images.keys())
     class_to_idx = {cls: i for i, cls in enumerate(classes)}
     num_classes = len(classes)

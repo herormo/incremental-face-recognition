@@ -69,7 +69,7 @@ for person_dir in os.listdir(TEST_DIR):
                 all_images.append((img_path, person_dir))
 
 # Limit to first 500 images
-all_images = all_images[:250]
+# all_images = all_images[:250]
 
 # Rebuild list of unique people from the selected images
 selected_people = set(person for _, person in all_images)
@@ -77,7 +77,7 @@ selected_people = set(person for _, person in all_images)
 # Filter all_images again to keep only images of selected people (optional here)
 test_set = [img for img in all_images if img[1] in selected_people]
 
-print(f"Loaded {len(test_set)} test images.")
+# print(f"Loaded {len(test_set)} test images.")
 
 # Pre-enroll images for each person
 enrollment_images = {}
@@ -101,8 +101,8 @@ for model_name, config in MODEL_CONFIG.items():
         finetune = finetune.lower() == "true"
 
     # Initial enrollment: enroll multiple images per person for better cold start
-    num_images_per_person = 3
-    print(f"Initial enrollment with up to {num_images_per_person} images per person...")
+    # num_images_per_person = 3
+    # print(f"Initial enrollment with up to {num_images_per_person} images per person...")
 
     # Pre-enroll images for each person
     enrollment_images = {}
@@ -114,7 +114,7 @@ for model_name, config in MODEL_CONFIG.items():
         enrollment_images[person].append(img_path)
 
     # Select diverse images among all available for each person
-    def select_diverse_images(image_paths, model, max_images=3):
+    def select_diverse_images(image_paths, model, max_images=30):
         embeddings = []
         for img_path in image_paths:
             image = Image.open(img_path).convert("RGB")
@@ -133,7 +133,7 @@ for model_name, config in MODEL_CONFIG.items():
 
     # Apply selection
     for person, image_paths in enrollment_images.items():
-        diverse_paths = select_diverse_images(image_paths, model, max_images=3)
+        diverse_paths = select_diverse_images(image_paths, model, max_images=30)
         enrollment_images[person] = diverse_paths
 
     print(f"Prepared enrollment images for {len(enrollment_images)} people with diversity.")

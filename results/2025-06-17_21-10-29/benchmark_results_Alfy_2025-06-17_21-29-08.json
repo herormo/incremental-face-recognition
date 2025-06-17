@@ -1,0 +1,362 @@
+{
+  "vggface2": {
+    "accuracy": 0.936,
+    "average_similarity": 0.9793762190341949,
+    "total": 250,
+    "correct": 234,
+    "wrong_cases": [
+      {
+        "image": "Akshay Kumar_0.jpg",
+        "true": "Akshay Kumar",
+        "pred": "No enrolled faces",
+        "similarity": 0.0
+      },
+      {
+        "image": "Akshay Kumar_1.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.6081757545471191
+      },
+      {
+        "image": "Akshay Kumar_40.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.3592057228088379
+      },
+      {
+        "image": "Akshay Kumar_48.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.7474717497825623
+      },
+      {
+        "image": "Alexandra Daddario_0.jpg",
+        "true": "Alexandra Daddario",
+        "pred": "Unknown",
+        "similarity": 0.38306862115859985
+      },
+      {
+        "image": "Alexandra Daddario_11.jpg",
+        "true": "Alexandra Daddario",
+        "pred": "Unknown",
+        "similarity": 0.7492884397506714
+      },
+      {
+        "image": "Alexandra Daddario_44.jpg",
+        "true": "Alexandra Daddario",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9289021492004395
+      },
+      {
+        "image": "Alia Bhatt_0.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9356192946434021
+      },
+      {
+        "image": "Alia Bhatt_13.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9683451056480408
+      },
+      {
+        "image": "Alia Bhatt_23.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Alexandra Daddario",
+        "similarity": 0.9945380091667175
+      },
+      {
+        "image": "Alia Bhatt_26.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9970889091491699
+      },
+      {
+        "image": "Alia Bhatt_50.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Alexandra Daddario",
+        "similarity": 0.9947253465652466
+      },
+      {
+        "image": "Alia Bhatt_52.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9939731359481812
+      },
+      {
+        "image": "Alia Bhatt_60.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Alexandra Daddario",
+        "similarity": 0.9911757707595825
+      },
+      {
+        "image": "Alia Bhatt_64.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.7631838321685791
+      },
+      {
+        "image": "Amitabh Bachchan_0.jpg",
+        "true": "Amitabh Bachchan",
+        "pred": "Alexandra Daddario",
+        "similarity": 0.9867978692054749
+      }
+    ]
+  },
+  "arcface": {
+    "accuracy": 0.616,
+    "average_similarity": 0.7553541709780693,
+    "total": 250,
+    "correct": 154,
+    "wrong_cases": [
+      {
+        "image": "Akshay Kumar_0.jpg",
+        "true": "Akshay Kumar",
+        "pred": "No enrolled faces",
+        "similarity": 0.0
+      },
+      {
+        "image": "Akshay Kumar_1.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.5456685423851013
+      },
+      {
+        "image": "Akshay Kumar_10.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.7425999045372009
+      },
+      {
+        "image": "Akshay Kumar_11.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.6327679753303528
+      },
+      {
+        "image": "Akshay Kumar_12.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.5119209289550781
+      },
+      {
+        "image": "Akshay Kumar_13.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.6670447587966919
+      },
+      {
+        "image": "Akshay Kumar_15.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.7052562236785889
+      },
+      {
+        "image": "Akshay Kumar_16.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.6838047504425049
+      },
+      {
+        "image": "Akshay Kumar_17.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.6819796562194824
+      },
+      {
+        "image": "Akshay Kumar_18.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.709541380405426
+      },
+      {
+        "image": "Akshay Kumar_2.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.6983721256256104
+      },
+      {
+        "image": "Akshay Kumar_21.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.696447491645813
+      },
+      {
+        "image": "Akshay Kumar_25.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.7496205568313599
+      },
+      {
+        "image": "Akshay Kumar_27.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.7489333748817444
+      },
+      {
+        "image": "Akshay Kumar_29.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.6561572551727295
+      },
+      {
+        "image": "Akshay Kumar_3.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.7218862771987915
+      },
+      {
+        "image": "Akshay Kumar_30.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.5946441888809204
+      },
+      {
+        "image": "Akshay Kumar_31.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.6814893484115601
+      },
+      {
+        "image": "Akshay Kumar_32.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.6618444323539734
+      },
+      {
+        "image": "Akshay Kumar_34.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.7468528151512146
+      }
+    ]
+  },
+  "resnet50": {
+    "accuracy": 0.92,
+    "average_similarity": 0.970153874874115,
+    "total": 250,
+    "correct": 230,
+    "wrong_cases": [
+      {
+        "image": "Akshay Kumar_0.jpg",
+        "true": "Akshay Kumar",
+        "pred": "No enrolled faces",
+        "similarity": 0.0
+      },
+      {
+        "image": "Akshay Kumar_11.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": -0.242229163646698
+      },
+      {
+        "image": "Akshay Kumar_13.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.5227413773536682
+      },
+      {
+        "image": "Akshay Kumar_17.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.5493297576904297
+      },
+      {
+        "image": "Akshay Kumar_28.jpg",
+        "true": "Akshay Kumar",
+        "pred": "Unknown",
+        "similarity": 0.7095504999160767
+      },
+      {
+        "image": "Alexandra Daddario_0.jpg",
+        "true": "Alexandra Daddario",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9802823066711426
+      },
+      {
+        "image": "Alia Bhatt_0.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9894049763679504
+      },
+      {
+        "image": "Alia Bhatt_12.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9926080107688904
+      },
+      {
+        "image": "Alia Bhatt_14.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9919177889823914
+      },
+      {
+        "image": "Alia Bhatt_15.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9911296367645264
+      },
+      {
+        "image": "Alia Bhatt_16.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9919117093086243
+      },
+      {
+        "image": "Alia Bhatt_2.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9859708547592163
+      },
+      {
+        "image": "Alia Bhatt_64.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9875154495239258
+      },
+      {
+        "image": "Alia Bhatt_67.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9513971209526062
+      },
+      {
+        "image": "Alia Bhatt_68.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Alexandra Daddario",
+        "similarity": 0.9966709017753601
+      },
+      {
+        "image": "Alia Bhatt_7.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9854567050933838
+      },
+      {
+        "image": "Alia Bhatt_71.jpg",
+        "true": "Alia Bhatt",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9924688935279846
+      },
+      {
+        "image": "Amitabh Bachchan_0.jpg",
+        "true": "Amitabh Bachchan",
+        "pred": "Akshay Kumar",
+        "similarity": 0.8869292736053467
+      },
+      {
+        "image": "Amitabh Bachchan_10.jpg",
+        "true": "Amitabh Bachchan",
+        "pred": "Unknown",
+        "similarity": 0.7217727899551392
+      },
+      {
+        "image": "Amitabh Bachchan_16.jpg",
+        "true": "Amitabh Bachchan",
+        "pred": "Akshay Kumar",
+        "similarity": 0.9428266286849976
+      }
+    ]
+  }
+}

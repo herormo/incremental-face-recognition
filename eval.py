@@ -27,7 +27,7 @@ with open("configs/model_config.json", "r") as f:
 
 # Download and locate dataset
 DATASET_PATH = Path(kagglehub.dataset_download("vasukipatel/face-recognition-dataset"))
-TEST_DIR = str(DATASET_PATH / "Original Images" / "Original Images")
+TEST_DIR = str(DATASET_PATH / "Faces" / "Faces")
 print("Evaluating dataset at:", TEST_DIR)
 LOAD_MODEL = GLOBAL_CONFIG.get("load_model", False)
 
@@ -57,6 +57,7 @@ all_files = [
 ]
 
 # Build list of (image_path, person_name) by parsing filename before the first underscore
+<<<<<<< HEAD
 # List all image files recursively, with folder name as person label
 all_images = []
 
@@ -71,6 +72,18 @@ for person_dir in os.listdir(TEST_DIR):
 # Limit to first 500 images
 all_images = all_images[:250]
 
+=======
+all_images = []
+for img_file in all_files:
+    if "_" in img_file:
+        person = img_file.split("_")[0]
+        img_path = os.path.join(TEST_DIR, img_file)
+        all_images.append((img_path, person))
+
+# Limit to first 1000 images
+all_images = all_images[:2000]
+
+>>>>>>> 168d61f0b79dddeba118116eaa97cfb61294eec4
 # Rebuild list of unique people from the selected images
 selected_people = set(person for _, person in all_images)
 
@@ -81,6 +94,11 @@ print(f"Loaded {len(test_set)} test images.")
 
 # Pre-enroll images for each person
 enrollment_images = {}
+for img_path, person in test_set:
+    if person not in enrollment_images:
+        enrollment_images[person] = []
+    if len(enrollment_images[person]) < 3:  # max 3 images per person
+        enrollment_images[person].append(img_path)
 
 for model_name, config in MODEL_CONFIG.items():
     print(f"\n--- Benchmarking {model_name} ---")

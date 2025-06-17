@@ -168,6 +168,8 @@ def add_to_database(name, new_embedding, index, database):
     return True
 
 
+
+
 def recognize(embedding, index, database, threshold=0.75):
     if index.ntotal == 0:
         return "No enrolled faces", 0.0  # Default similarity to 0.0

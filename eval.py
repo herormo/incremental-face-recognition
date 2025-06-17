@@ -22,6 +22,10 @@ import seaborn as sns
 with open("configs/global_config.json", "r") as f:
     GLOBAL_CONFIG = json.load(f)
 
+# Load global config JSON
+with open("configs/global_config.json", "r") as f:
+    GLOBAL_CONFIG = json.load(f)
+
 # Load model config JSON
 with open("configs/model_config.json", "r") as f:
     MODEL_CONFIG = json.load(f)
@@ -70,7 +74,11 @@ for person_dir in os.listdir(TEST_DIR):
                 all_images.append((img_path, person_dir))
 
 # Limit to first 500 images
+<<<<<<< HEAD
 all_images = all_images[:10]
+=======
+all_images = all_images[:250]
+>>>>>>> origin/feature/final
 
 # Rebuild list of unique people from the selected images
 selected_people = set(person for _, person in all_images)
@@ -102,7 +110,11 @@ for model_name, config in MODEL_CONFIG.items():
         finetune = finetune.lower() == "true"
 
     # Initial enrollment: enroll multiple images per person for better cold start
+<<<<<<< HEAD
     num_images_per_person = 1
+=======
+    num_images_per_person = 3
+>>>>>>> origin/feature/final
     print(f"Initial enrollment with up to {num_images_per_person} images per person...")
 
     # Pre-enroll images for each person
@@ -115,7 +127,11 @@ for model_name, config in MODEL_CONFIG.items():
         enrollment_images[person].append(img_path)
 
     # Select diverse images among all available for each person
+<<<<<<< HEAD
     def select_diverse_images(image_paths, model, max_images=1):
+=======
+    def select_diverse_images(image_paths, model, max_images=3):
+>>>>>>> origin/feature/final
         embeddings = []
         for img_path in image_paths:
             image = Image.open(img_path).convert("RGB")
@@ -185,7 +201,7 @@ for model_name, config in MODEL_CONFIG.items():
     print(f"Incremental Accuracy: {accuracy:.2%}")
     print(f"Average Similarity: {avg_sim:.4f}")
 
-    # Visualization
+    # Visualization (same as before)
     plt.figure()
     plt.hist(similarities, bins=20, color="skyblue", edgecolor="black")
     plt.title(f"{model_name} Similarity Distribution")
@@ -193,9 +209,13 @@ for model_name, config in MODEL_CONFIG.items():
     plt.ylabel("Frequency")
     plt.grid(True)
 
+<<<<<<< HEAD
     graphs_dir=os.path.join(results_subdir, "graphs")
     os.makedirs(graphs_dir, exist_ok=True)
     plot_path = os.path.join(graphs_dir, f"{model_name}_similarity_distribution.png")
+=======
+    plot_path = os.path.join(results_subdir, f"{model_name}_similarity_distribution.png")
+>>>>>>> origin/feature/final
     plt.savefig(plot_path)
 
     if wrong_predictions:

@@ -1,4 +1,9 @@
 {
+  "finetune":"True",
+  "epochs": 10,
+  "images_per_person": 3,
+  "num_images": 250,
+
   "vggface2": {
     "accuracy": 0.62,
     "average_similarity": 0.9823694961071014,

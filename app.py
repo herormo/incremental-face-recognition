@@ -9,6 +9,9 @@ model, index, database = load_model()
 st.set_page_config(page_title="Incremental Face Recognition", layout="centered")
 st.title("Incremental Face Recognition System (PyTorch)")
 
+# Model selection
+model_name = st.selectbox("Choose model", ["resnet50", "arcface", "vggface2"])
+
 mode = st.radio("Choose mode", ["Enroll New Face", "Recognize Face"])
 
 uploaded_image = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"])
@@ -16,7 +19,7 @@ uploaded_image = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"]
 if uploaded_image:
     image = Image.open(uploaded_image).convert("RGB")
     st.image(image, caption="Uploaded Image", use_container_width=True)
-    embedding = extract_embedding(model, image, model_name="vggface")
+    embedding = extract_embedding(model, image, model_name="vggface2")
 
     if mode == "Enroll New Face":
         name = st.text_input("Enter name")
@@ -31,9 +34,13 @@ if uploaded_image:
         if st.button("Identify"):
             st.write("Button clicked. Recognizing...")
             identity, dist = recognize(embedding, index, database)
-            st.write(
-                f"Immediate check → Identified as: {identity} at similarity: {dist:.4f}"
-            )
+            # check if the image is unrecognizable (dist is None)
+            if identity == "Unknown":
+                st.warning("No face detected")
+            else:
+                st.write(
+                   f"Immediate check → Identified as: {identity} at similarity: {dist:.4f}"
+                )
             # st.info(f"Identified as: {identity}")
             # if dist is not None:
             #     st.write(f"Distance: {dist:.4f}")

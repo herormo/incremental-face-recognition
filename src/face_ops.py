@@ -88,8 +88,14 @@ def build_model_resnet50():
     return model
 
 
-def load_model():
-    model = build_model_resnet50()
+
+def load_model(model_name="resnet50"):
+    if model_name == "arcface":
+        model = build_model_arcface()
+    elif model_name == "resnet50":
+        model = build_model_resnet50()
+    elif model_name == "vggface2":
+        model = build_model()
     if INDEX_PATH.exists():
         index = faiss.read_index(str(INDEX_PATH))
     else:

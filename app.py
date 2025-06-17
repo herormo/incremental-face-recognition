@@ -33,7 +33,7 @@ if uploaded_image:
             st.write("Button clicked. Recognizing...")
             embedding = normalize(embedding, axis=1).astype("float32")
             identity, dist = recognize(embedding, index, database)
-            if dist is not None or identity!= "Unknown":
+            if dist is not None and identity!= "Unknown":
                 st.write(
                 f"Immediate check → Identified as: {identity} at similarity: {dist:.4f}"
             )

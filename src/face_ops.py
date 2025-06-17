@@ -58,24 +58,35 @@ def build_model_arcface():
 
 def build_model_resnet50():
     base_model = models.resnet50(pretrained=True)
-    # Modify the model to remove the classification head and use global average pooling
-    model = (
-        nn.Sequential(
-            *list(base_model.children())[:-1],  # Remove the final classification layer
-            nn.AdaptiveAvgPool2d((1, 1)),  # Use adaptive average pooling
-            nn.Flatten(),  # Flatten the output
-            nn.Linear(2048, 512),  # Map to 512-dimensional embeddings
-            nn.ReLU(),  # Applying ReLU activation
-            nn.Linear(512, 512),  # Final embedding dimension
-        )
-        .to(device)
-        .eval()
-    )
+
+    # Optionally freeze earlier layers
+    for name, param in base_model.named_parameters():
+        if "layer4" not in name and "fc" not in name:
+            param.requires_grad = False
+
+    model = nn.Sequential(
+        *list(base_model.children())[:-1],         # Remove classification head
+        nn.Flatten(),                              # Flatten the feature map
+        nn.BatchNorm1d(2048),                      # Normalize feature embeddings
+        nn.Linear(2048, 512),                      # Reduce to 512-D
+        nn.ReLU(inplace=True),
+        nn.BatchNorm1d(512),
+        nn.Dropout(0.4),
+        nn.Linear(512, 512),                       # Final embedding layer
+        nn.BatchNorm1d(512)                        # Essential for face embeddings
+    ).to(device)
+
     return model
 
 
-def load_model():
-    model = build_model_resnet50()
+
+def load_model(model_name="resnet50"):
+    if model_name == "arcface":
+        model = build_model_arcface()
+    elif model_name == "resnet50":
+        model = build_model_resnet50()
+    elif model_name == "vggface2":
+        model = build_model()
     if INDEX_PATH.exists():
         index = faiss.read_index(str(INDEX_PATH))
     else:
@@ -206,6 +217,7 @@ def finetune_model(model, enrollment_images, model_name, device, epochs=200, lr=
     classifier = torch.nn.Linear(512, num_classes).to(device)  # 512 is embedding size
 
     optimizer = torch.optim.Adam(list(model.parameters()) + list(classifier.parameters()), lr=lr)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
     criterion = nn.CrossEntropyLoss()
 
 

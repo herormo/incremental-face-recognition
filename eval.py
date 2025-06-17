@@ -16,6 +16,7 @@ import kagglehub
 from pathlib import Path
 import faiss
 from src import face_ops
+import seaborn as sns
 
 # Load global config JSON
 with open("configs/global_config.json", "r") as f:
@@ -69,7 +70,7 @@ for person_dir in os.listdir(TEST_DIR):
                 all_images.append((img_path, person_dir))
 
 # Limit to first 500 images
-all_images = all_images[:250]
+all_images = all_images[:10]
 
 # Rebuild list of unique people from the selected images
 selected_people = set(person for _, person in all_images)
@@ -101,7 +102,7 @@ for model_name, config in MODEL_CONFIG.items():
         finetune = finetune.lower() == "true"
 
     # Initial enrollment: enroll multiple images per person for better cold start
-    num_images_per_person = 3
+    num_images_per_person = 1
     print(f"Initial enrollment with up to {num_images_per_person} images per person...")
 
     # Pre-enroll images for each person
@@ -114,7 +115,7 @@ for model_name, config in MODEL_CONFIG.items():
         enrollment_images[person].append(img_path)
 
     # Select diverse images among all available for each person
-    def select_diverse_images(image_paths, model, max_images=3):
+    def select_diverse_images(image_paths, model, max_images=1):
         embeddings = []
         for img_path in image_paths:
             image = Image.open(img_path).convert("RGB")
@@ -184,7 +185,7 @@ for model_name, config in MODEL_CONFIG.items():
     print(f"Incremental Accuracy: {accuracy:.2%}")
     print(f"Average Similarity: {avg_sim:.4f}")
 
-    # Visualization (same as before)
+    # Visualization
     plt.figure()
     plt.hist(similarities, bins=20, color="skyblue", edgecolor="black")
     plt.title(f"{model_name} Similarity Distribution")
@@ -192,7 +193,9 @@ for model_name, config in MODEL_CONFIG.items():
     plt.ylabel("Frequency")
     plt.grid(True)
 
-    plot_path = os.path.join(results_subdir, f"{model_name}_similarity_distribution.png")
+    graphs_dir=os.path.join(results_subdir, "graphs")
+    os.makedirs(graphs_dir, exist_ok=True)
+    plot_path = os.path.join(graphs_dir, f"{model_name}_similarity_distribution.png")
     plt.savefig(plot_path)
 
     if wrong_predictions:
@@ -231,3 +234,70 @@ with open(results_file, "w") as f:
     json.dump(results_summary, f, indent=2)
 
 print(f"\nBenchmarking complete. Results saved to {results_file}")
+
+
+# Seaborn and Matplotlib enhancements
+sns.set_theme(style="darkgrid")
+plt.rcParams.update({
+    'axes.titlesize': 14,
+    'axes.labelsize': 12,
+    'xtick.labelsize': 10,
+    'ytick.labelsize': 10,
+    'legend.fontsize': 11,
+    'font.family': 'serif',
+    'axes.grid': True
+})
+
+# Plot Model Accuracy Comparison
+def plot_model_accuracy_comparison(models, accuracies, output_dir):
+    plt.figure(figsize=(10, 6))
+    sns.barplot(x=models, y=accuracies, palette="viridis")
+    plt.title("Model Accuracy Comparison")
+    plt.xlabel("Models")
+    plt.ylabel("Accuracy")
+    plt.ylim(0, 1)
+    plt.savefig(os.path.join(output_dir, "model_accuracy_comparison.png"))
+    plt.close()
+
+def plot_misclassification_analysis(wrong_predictions, output_dir):
+    misclass_analysis = {}
+    for _, true_label, pred_label, _ in wrong_predictions:
+        if true_label not in misclass_analysis:
+            misclass_analysis[true_label] = {}
+        if pred_label not in misclass_analysis[true_label]:
+            misclass_analysis[true_label][pred_label] = 0
+        misclass_analysis[true_label][pred_label] += 1
+
+    classes = list({label for label in misclass_analysis.keys()} |
+                   {label for predictions in misclass_analysis.values() for label in predictions.keys()})
+    misclass_matrix = np.zeros((len(classes), len(classes)))
+
+    label_to_idx = {label: idx for idx, label in enumerate(classes)}
+    for true_label, preds in misclass_analysis.items():
+        for pred_label, count in preds.items():
+            misclass_matrix[label_to_idx[true_label], label_to_idx[pred_label]] = count
+
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(misclass_matrix, annot=True, fmt="0f", cmap="Reds",
+                xticklabels=classes, yticklabels=classes)
+    plt.title("Misclassification Analysis")
+    plt.xlabel("Predicted Label")
+    plt.ylabel("True Label")
+    plt.savefig(os.path.join(output_dir, "misclassification_analysis.png"))
+    plt.close()
+
+# Create output directory for graphs
+graph_output_dir = os.path.join(results_subdir, "graphs")
+os.makedirs(graph_output_dir, exist_ok=True)
+
+# Model Accuracy Comparison
+models = list(results_summary.keys())
+accuracies = [results_summary[model]["accuracy"] for model in models]
+plot_model_accuracy_comparison(models, accuracies, graph_output_dir)
+
+# Use this in the evaluation loop after collecting `wrong_predictions`
+plot_misclassification_analysis(wrong_predictions, graph_output_dir)
+
+# Summary
+print(f"\nEnhanced visualizations saved in {graph_output_dir}")
+

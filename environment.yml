@@ -22,4 +22,5 @@ dependencies:
       - faiss-cpu
       - kagglehub
       - streamlit
+      - seaborn
 
